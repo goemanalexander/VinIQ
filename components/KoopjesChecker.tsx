@@ -1,10 +1,13 @@
 import type { Koopjeschecker } from '@/lib/types';
+import type { FieldProvenance } from '@/lib/provenance';
+import { PROVENANCE_META } from '@/lib/provenance';
 import { WINDOW_STATUS_LABEL, deriveWindowStatus, formatCurrency } from '@/lib/utils';
 import ExpandableSection from './ExpandableSection';
 import StructureBars from './StructureBars';
 import MatchStars from './MatchStars';
 import { BadgeRow } from './BadgeChip';
 import ActionBanner from './ActionBanner';
+import ProvenanceBadge from './ProvenanceBadge';
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
@@ -28,12 +31,30 @@ function TagGroup({ label, items }: { label: string; items: string[] }) {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+function InfoRow({ label, value, provenance }: { label: string; value: React.ReactNode; provenance?: FieldProvenance }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1 text-sm">
-      <span className="text-cream-300/60">{label}</span>
+      <span className="text-cream-300/60">
+        {label}
+        <ProvenanceBadge provenance={provenance} />
+      </span>
       <span className="text-right font-medium text-cream-100">{value}</span>
     </div>
+  );
+}
+
+/** Provenance-aware estimate notice — distinguishes static style knowledge from computed inference. */
+function EstimatedNotice({ provenance }: { provenance?: FieldProvenance }) {
+  const meta = provenance ? PROVENANCE_META[provenance.source] : null;
+  const sourceLabel = meta
+    ? provenance?.detail
+      ? `${meta.icon} ${meta.label} — ${provenance.detail}`
+      : `${meta.icon} ${meta.label}`
+    : 'Estimated';
+  return (
+    <p className="mb-3 rounded-lg border border-gold-500/20 bg-gold-500/5 px-3 py-1.5 text-[11px] text-gold-400/70 italic">
+      {sourceLabel} — generic style profile, not specific to this wine&apos;s label.
+    </p>
   );
 }
 
@@ -51,25 +72,27 @@ export default function KoopjesChecker({ data, defaultOpenFirst = false }: { dat
       {/* 1 — General Information */}
       <ExpandableSection number={1} title="General Information" icon="🏷️" defaultOpen={defaultOpenFirst}>
         <div className="space-y-1">
-          <InfoRow label="Producer" value={data.general.producer} />
-          <InfoRow label="Wine" value={data.general.wineName} />
-          <InfoRow label="Vintage" value={data.general.vintage} />
-          <InfoRow label="Appellation" value={data.general.appellation} />
-          <InfoRow label="Region" value={`${data.general.region}, ${data.general.country}`} />
-          <InfoRow label="Grapes" value={data.general.grapes.join(', ')} />
-          <InfoRow label="Alcohol" value={`${data.general.alcohol}%`} />
-          {data.general.price !== undefined && <InfoRow label="Price" value={formatCurrency(data.general.price)} />}
+          <InfoRow label="Producer" value={data.general.producer || 'Unknown'} provenance={data.provenance?.producer} />
+          <InfoRow label="Wine" value={data.general.wineName} provenance={data.provenance?.wineName} />
+          <InfoRow label="Vintage" value={data.general.vintage > 0 ? data.general.vintage : 'Not visible'} provenance={data.provenance?.vintage} />
+          <InfoRow label="Appellation" value={data.general.appellation || 'Not visible'} provenance={data.provenance?.appellation} />
+          <InfoRow label="Region" value={`${data.general.region}, ${data.general.country}`} provenance={data.provenance?.region} />
+          <InfoRow label="Grapes" value={data.general.grapes.length > 0 ? data.general.grapes.join(', ') : 'Not visible'} provenance={data.provenance?.grapes} />
+          <InfoRow label="Alcohol" value={data.general.alcohol > 0 ? `${data.general.alcohol}%` : 'Not visible'} provenance={data.provenance?.alcohol} />
+          {data.general.price !== undefined && <InfoRow label="Price" value={formatCurrency(data.general.price)} provenance={data.provenance?.price} />}
         </div>
       </ExpandableSection>
 
       {/* 2 — Style */}
       <ExpandableSection number={2} title="Style" icon="🍷">
+        {data.style.isEstimated && <EstimatedNotice provenance={data.provenance?.style} />}
         <p className="mb-3 text-sm leading-relaxed text-cream-200">{data.style.styleSummary}</p>
         <TagGroup label="Style tags" items={data.style.styleTags} />
       </ExpandableSection>
 
       {/* 3 — Aromatic Profile */}
       <ExpandableSection number={3} title="Aromatic Profile" icon="👃">
+        {data.aromatics.isEstimated && <EstimatedNotice provenance={data.provenance?.aromatics} />}
         <p className="mb-3 text-sm leading-relaxed text-cream-200">{data.aromatics.description}</p>
         <div className="space-y-3">
           <TagGroup label="Primary aromas" items={data.aromatics.primaryAromas} />
@@ -80,12 +103,14 @@ export default function KoopjesChecker({ data, defaultOpenFirst = false }: { dat
 
       {/* 4 — Structure */}
       <ExpandableSection number={4} title="Structure" icon="⚖️">
+        {data.structure.isEstimated && <EstimatedNotice provenance={data.provenance?.structure} />}
         <p className="mb-4 text-sm leading-relaxed text-cream-200">{data.structure.description}</p>
         <StructureBars profile={data.structure.profile} />
       </ExpandableSection>
 
       {/* 5 — Terroir */}
       <ExpandableSection number={5} title="Terroir" icon="⛰️">
+        {data.terroir.isEstimated && <EstimatedNotice provenance={data.provenance?.terroir} />}
         <p className="mb-3 text-sm leading-relaxed text-cream-200">{data.terroir.description}</p>
         <div className="space-y-1">
           <InfoRow label="Soil" value={data.terroir.soil} />
@@ -96,6 +121,7 @@ export default function KoopjesChecker({ data, defaultOpenFirst = false }: { dat
 
       {/* 6 — Drinking Window */}
       <ExpandableSection number={6} title="Drinking Window" icon="⏳">
+        {data.drinkingWindow.isEstimated && <EstimatedNotice provenance={data.provenance?.drinkingWindow} />}
         <div className="mb-3 flex items-center justify-between text-sm">
           <span className="font-medium text-cream-100">{WINDOW_STATUS_LABEL[status]}</span>
           <span className="text-cream-300/60">
@@ -118,6 +144,7 @@ export default function KoopjesChecker({ data, defaultOpenFirst = false }: { dat
 
       {/* 7 — Decanting */}
       <ExpandableSection number={7} title="Decanting" icon="🫙">
+        {data.decanting.isEstimated && <EstimatedNotice provenance={{ source: 'knowledge_base' }} />}
         <div className="space-y-1">
           <InfoRow label="Decant" value={data.decanting.shouldDecant ? `Yes — ${data.decanting.decantMinutes} min` : 'Not necessary'} />
           <InfoRow label="Serving temperature" value={`${data.decanting.servingTempC[0]}–${data.decanting.servingTempC[1]}°C`} />
@@ -127,6 +154,7 @@ export default function KoopjesChecker({ data, defaultOpenFirst = false }: { dat
 
       {/* 8 — Food Pairing */}
       <ExpandableSection number={8} title="Food Pairing" icon="🍽️">
+        {data.foodPairing.isEstimated && <EstimatedNotice provenance={data.provenance?.foodPairing} />}
         <TagGroup label="Pairs well with" items={data.foodPairing.dishes} />
         <p className="mt-3 text-sm leading-relaxed text-cream-200">{data.foodPairing.notes}</p>
       </ExpandableSection>

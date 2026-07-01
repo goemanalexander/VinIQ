@@ -50,7 +50,7 @@ export default function ScanWineListPage() {
       <div className="px-5 pb-8 pt-4">
         <p className="mb-6 text-sm leading-relaxed text-cream-300/70">
           Take a photo of the wine list or upload a screenshot. VinIQ will extract every wine and
-          show you Alexander's Choice, Best Value, Best Wine and Best Price/Quality.
+          show you Alexander&apos;s Choice, Best Value, Best Wine and Best Price/Quality.
         </p>
 
         {error && (

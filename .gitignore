@@ -38,3 +38,6 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code local session config (machine-specific, not shared)
+.claude/

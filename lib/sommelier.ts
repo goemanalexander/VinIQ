@@ -1,5 +1,5 @@
-import type { ActionItem, CellarWine, AiTasteProfile } from './types';
-import { deriveWindowStatus, WINDOW_STATUS_LABEL } from './utils';
+import type { ActionItem, CellarWine } from './types';
+import { deriveWindowStatus } from './utils';
 
 // ---------------------------------------------------------------------------
 // Cellar Summary

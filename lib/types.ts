@@ -1,5 +1,7 @@
 // Core data model for VinIQ — a personal AI wine advisor.
 
+import type { ProvenanceMap } from './provenance';
+
 export type WineColor = 'red' | 'white' | 'rosé' | 'sparkling';
 
 export type RecommendedAction = 'BUY' | 'CONSIDER' | 'SKIP';
@@ -53,6 +55,7 @@ export interface StyleInfo {
   color: WineColor;
   styleSummary: string;
   styleTags: string[];
+  isEstimated?: boolean;
 }
 
 /** Section 3 — Aromatic Profile */
@@ -61,12 +64,14 @@ export interface AromaticProfile {
   secondaryAromas: string[];
   tertiaryAromas: string[];
   description: string;
+  isEstimated?: boolean;
 }
 
 /** Section 4 — Structure */
 export interface StructureSection {
   profile: StructureProfile;
   description: string;
+  isEstimated?: boolean;
 }
 
 /** Section 5 — Terroir */
@@ -75,6 +80,7 @@ export interface TerroirInfo {
   climate: string;
   winemaking: string;
   description: string;
+  isEstimated?: boolean;
 }
 
 /** Section 6 — Drinking Window */
@@ -84,6 +90,7 @@ export interface DrinkingWindow {
   peakFrom: number;
   peakTo: number;
   status: 'too_young' | 'ready' | 'peak' | 'past_peak';
+  isEstimated?: boolean;
 }
 
 /** Section 7 — Decanting */
@@ -92,12 +99,14 @@ export interface DecantingInfo {
   decantMinutes: number;
   servingTempC: [number, number];
   glassType: string;
+  isEstimated?: boolean;
 }
 
 /** Section 8 — Food Pairing */
 export interface FoodPairing {
   dishes: string[];
   notes: string;
+  isEstimated?: boolean;
 }
 
 /** Section 9 — Personal Score */
@@ -121,6 +130,8 @@ export interface ScanMetadata {
   promotionPrice?: number;
   originalPrice?: number;
   discountPercent?: number;
+  /** true when vintage was not visible on the label and was assumed */
+  vintageEstimated?: boolean;
 }
 
 /** Full "Koopjeschecker" analysis — used for bottles & promotions */
@@ -138,6 +149,8 @@ export interface Koopjeschecker {
   cellarAdvice: CellarAdvice;
   recommendedAction: RecommendedAction;
   scanMetadata?: ScanMetadata; // Only present on image-scanned KCs
+  /** Where each displayed fact came from — see lib/provenance.ts */
+  provenance?: ProvenanceMap;
 }
 
 /** A wine line on a scanned wine list */
@@ -164,6 +177,15 @@ export interface WineListResult {
   bestPriceQualityId: string;
 }
 
+/** One line in the purchase ledger */
+export interface PurchaseEntry {
+  id: string;
+  quantity: number;
+  pricePerBottle: number;
+  date: string;       // YYYY-MM-DD
+  retailer?: string;
+}
+
 /** A bottle physically owned in the cellar */
 export interface CellarWine {
   id: string;
@@ -171,11 +193,14 @@ export interface CellarWine {
   wineName: string;
   vintage: number;
   quantity: number;
-  purchasePrice: number;
-  personalRating: number; // 0-10, 0 = not rated
+  purchasePrice: number;   // weighted average across all purchases
+  personalRating: number;  // 0-10, 0 = not rated
   notes: string;
   koopjeschecker: Koopjeschecker;
-  addedAt: string; // ISO date
+  addedAt: string;         // ISO date
+  purchases?: PurchaseEntry[];  // ledger; absent on wines imported before Sprint 5
+  /** Provenance for cellar-level facts (purchasePrice, personalRating) — see lib/provenance.ts */
+  provenance?: ProvenanceMap;
 }
 
 export interface TasteProfile {

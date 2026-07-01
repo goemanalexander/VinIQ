@@ -108,7 +108,7 @@ export default function WineListResultPage() {
             <p className="text-3xl mb-3">🔍</p>
             <p className="font-display text-base text-cream-100">No wines detected</p>
             <p className="mt-1 text-sm text-cream-300/60">
-              VinIQ couldn't extract any wines from the image. Try a clearer photo with better
+              VinIQ couldn&apos;t extract any wines from the image. Try a clearer photo with better
               lighting, or ensure the wine list text is legible.
             </p>
           </Card>

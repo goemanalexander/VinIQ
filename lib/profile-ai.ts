@@ -5,7 +5,6 @@
  */
 
 import type { AiTasteProfile, CellarWine, FeedbackEntry } from './types';
-import { deriveWindowStatus } from './utils';
 
 function avg(nums: number[]): number {
   if (!nums.length) return 0;

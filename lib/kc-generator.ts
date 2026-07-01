@@ -84,6 +84,7 @@ function bottleReasoning(
 }
 
 export function buildBottleKc(wine: DetectedWine, ocrText: string, ideal: Structure = COLD_START_IDEAL): Koopjeschecker {
+  const vintageEstimated = wine.vintage === null;
   const vintage = wine.vintage ?? new Date().getFullYear() - 3;
   const structure = inferStructure(wine);
   const { score: matchScore, positiveTags, negativeTags } = calculateAlexanderMatch(wine, structure, ideal, wine.vintage);
@@ -93,7 +94,7 @@ export function buildBottleKc(wine: DetectedWine, ocrText: string, ideal: Struct
   const badges = ageingBadges(kc);
   const recommendedAction: RecommendedAction = matchScore >= 75 ? 'BUY' : matchScore >= 50 ? 'CONSIDER' : 'SKIP';
 
-  const scanMetadata: ScanMetadata = { ocrText, confidence };
+  const scanMetadata: ScanMetadata = { ocrText, confidence, vintageEstimated };
 
   return {
     ...kc,
@@ -226,6 +227,7 @@ function promotionReasoning(
 }
 
 export function buildPromotionKc(wine: DetectedPromotion, ocrText: string, ideal: Structure = COLD_START_IDEAL): Koopjeschecker {
+  const vintageEstimated = wine.vintage === null;
   const vintage = wine.vintage ?? new Date().getFullYear() - 3;
   const structure = inferStructure(wine);
   const { score: matchScore, positiveTags, negativeTags } = calculateAlexanderMatch(wine, structure, ideal, wine.vintage);
@@ -250,6 +252,7 @@ export function buildPromotionKc(wine: DetectedPromotion, ocrText: string, ideal
     promotionPrice: wine.promotionPrice ?? undefined,
     originalPrice: wine.originalPrice ?? undefined,
     discountPercent: discountPercent ?? undefined,
+    vintageEstimated,
   };
 
   const dealSuggestion =

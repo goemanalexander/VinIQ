@@ -16,6 +16,8 @@ import {
   KC_CHATEAUNEUF, KC_RIPASSO, KC_BAROLO, KC_CHAMPAGNE,
 } from './mockData';
 import { genId } from './utils';
+import type { ProvenanceMap } from './provenance';
+import { validateGeneralInfo, sanitizeGeneralInfo } from './validation';
 
 // ---------------------------------------------------------------------------
 // Detected wine (from OCR)
@@ -508,24 +510,53 @@ export function buildKcForDetectedWine(wine: DetectedWine, vintage: number): Koo
   const riservaBonus = isRiserva ? (RISERVA_BONUS.ageingPotential ?? 0) : 0;
   const ageingPotentialYears = base.ageingPotential + riservaBonus;
 
-  const isEstimated = !wine.producer || wine.grapes.length === 0;
-  const estimatedNote = isEstimated
-    ? 'Estimated from style and region. Producer-specific data unavailable.'
-    : 'Estimated from style and region (no producer-specific ageing data available).';
+  const estimatedNote = 'Estimated from style and region (no producer-specific ageing data available).';
+
+  const generalDraft = {
+    producer: wine.producer ?? 'Unknown',
+    wineName: wine.wineName,
+    vintage,
+    country: wine.country ?? 'Unknown',
+    region: wine.region ?? wine.appellation ?? 'Unknown',
+    appellation: wine.appellation ?? '',
+    grapes: wine.grapes, // empty array means not visible on label — never fill from template
+    price: wine.price ?? undefined,
+    alcohol: wine.alcohol ?? 0, // 0 means not visible on label
+  };
+
+  // Sprint 7 — reject impossible region/appellation/country/style combinations
+  // before this data ever reaches the UI. See lib/validation.ts for the rules
+  // and the rationale for keeping the appellation over a conflicting region.
+  const validation = validateGeneralInfo(generalDraft, template.style.color);
+  const general = sanitizeGeneralInfo(generalDraft, validation);
+
+  const provenance: ProvenanceMap = {};
+  if (general.producer !== 'Unknown') provenance.producer = { source: 'ocr' };
+  if (general.wineName) provenance.wineName = { source: 'ocr' };
+  if (wine.vintage !== null) provenance.vintage = { source: 'ocr' };
+  if (general.country !== 'Unknown') provenance.country = { source: 'ocr' };
+  if (general.region !== 'Unknown') provenance.region = { source: 'ocr' };
+  if (general.appellation) provenance.appellation = { source: 'ocr' };
+  if (general.grapes.length > 0) provenance.grapes = { source: 'ocr' };
+  if (general.alcohol > 0) provenance.alcohol = { source: 'ocr' };
+  if (general.price !== undefined) provenance.price = { source: 'ocr' };
+  provenance.style = { source: 'knowledge_base' };
+  provenance.aromatics = { source: 'knowledge_base' };
+  provenance.terroir = { source: 'knowledge_base' };
+  provenance.foodPairing = { source: 'knowledge_base' };
+  provenance.structure = {
+    source: 'inferred',
+    detail: wine.grapes.length > 0 ? 'from grapes' : wine.region ? 'from region' : 'default profile',
+  };
+  provenance.drinkingWindow = { source: 'inferred', detail: 'from vintage + style' };
 
   return {
     ...template,
     id: genId('kc'),
-    general: {
-      ...template.general,
-      producer: wine.producer ?? template.general.producer,
-      wineName: wine.wineName,
-      vintage,
-      region: wine.region ?? wine.appellation ?? template.general.region,
-      grapes: wine.grapes.length > 0 ? wine.grapes : template.general.grapes,
-      price: wine.price ?? template.general.price,
-      alcohol: wine.alcohol ?? template.general.alcohol,
-    },
+    general,
+    provenance,
+    style: { ...template.style, isEstimated: true },
+    aromatics: { ...template.aromatics, isEstimated: true },
     structure: {
       ...template.structure,
       profile: {
@@ -535,8 +566,12 @@ export function buildKcForDetectedWine(wine: DetectedWine, vintage: number): Koo
         sweetness: structure.sweetness,
         alcohol: wine.alcohol ?? template.structure.profile.alcohol,
       },
+      isEstimated: true,
     },
-    drinkingWindow,
+    terroir: { ...template.terroir, isEstimated: true },
+    drinkingWindow: { ...drinkingWindow, isEstimated: true },
+    decanting: { ...template.decanting, isEstimated: true },
+    foodPairing: { ...template.foodPairing, isEstimated: true },
     cellarAdvice: {
       ...template.cellarAdvice,
       ageingPotentialYears,

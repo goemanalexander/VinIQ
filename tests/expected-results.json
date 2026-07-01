@@ -1,0 +1,92 @@
+{
+  "_comment": "High-confidence OCR facts only. Fields omitted (grapes, vintage, alcohol) are either not visible on the label or genuinely indeterminate. VinIQ must show 'Not visible' or '(est.)' for those fields — never invent a value.",
+  "images": [
+    {
+      "id": "001",
+      "file": "images/bottle/001-zenato-ripassa-front.jpg",
+      "category": "bottle",
+      "purpose": "Front label with producer and wine name clearly visible. Vintage, grapes and alcohol not printed on the front label.",
+      "expected": {
+        "producer": "Zenato",
+        "wineName": "Ripassa Valpolicella Ripasso Superiore",
+        "country": "Italy",
+        "classification": "DOC Superiore"
+      },
+      "expectedConfidence": {
+        "producer": "high",
+        "wine": "high",
+        "vintage": "unknown",
+        "region": "unknown",
+        "grapes": "unknown",
+        "alcohol": "unknown"
+      },
+      "must_not_invent": ["vintage", "grapes", "alcohol", "region"]
+    },
+    {
+      "id": "002",
+      "file": "images/back-label/002-zenato-ripassa-back.jpg",
+      "category": "back-label",
+      "purpose": "Back label showing appellation, producer address, alcohol percentage and country. Vintage and grapes not printed on this label.",
+      "expected": {
+        "producer": "Zenato",
+        "wineName": "Ripassa Valpolicella Ripasso Superiore",
+        "country": "Italy",
+        "alcohol": 14.0
+      },
+      "expectedConfidence": {
+        "producer": "high",
+        "wine": "high",
+        "vintage": "unknown",
+        "region": "unknown",
+        "grapes": "unknown",
+        "alcohol": "high"
+      },
+      "must_not_invent": ["vintage", "grapes", "region"]
+    },
+    {
+      "id": "003",
+      "file": "images/bottle/003-chateau-cantemerle-2019-front.jpg",
+      "category": "bottle",
+      "purpose": "Front label with all key facts clearly printed: producer, wine name, vintage, region, country and Grand Cru classification. Grapes and alcohol not printed on front label.",
+      "expected": {
+        "producer": "Château Cantemerle",
+        "wineName": "Château Cantemerle",
+        "vintage": 2019,
+        "region": "Haut-Médoc",
+        "country": "France",
+        "classification": "Grand Cru Classé en 1855"
+      },
+      "expectedConfidence": {
+        "producer": "high",
+        "wine": "high",
+        "vintage": "high",
+        "region": "high",
+        "grapes": "unknown",
+        "alcohol": "unknown"
+      },
+      "must_not_invent": ["grapes", "alcohol"]
+    },
+    {
+      "id": "004",
+      "file": "images/bottle/004-moet-chandon-brut-imperial-front.jpg",
+      "category": "bottle",
+      "purpose": "Front label of a non-vintage Champagne. Producer, wine name, region, country and alcohol clearly visible. No vintage year on label by design (NV).",
+      "expected": {
+        "producer": "Moët & Chandon",
+        "wineName": "Brut Impérial",
+        "region": "Champagne",
+        "country": "France",
+        "alcohol": 12.5
+      },
+      "expectedConfidence": {
+        "producer": "high",
+        "wine": "high",
+        "vintage": "unknown",
+        "region": "high",
+        "grapes": "unknown",
+        "alcohol": "high"
+      },
+      "must_not_invent": ["vintage", "grapes"]
+    }
+  ]
+}

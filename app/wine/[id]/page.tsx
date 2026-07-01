@@ -1,17 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Check, ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ShoppingBag, Check, ChevronDown } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
 import MatchStars from '@/components/MatchStars';
 import { BadgeRow } from '@/components/BadgeChip';
 import KoopjesChecker from '@/components/KoopjesChecker';
 import FeedbackBar from '@/components/FeedbackBar';
-import { getWineListResult, getCellar, addCellarWine } from '@/lib/storage';
+import PurchaseDialog from '@/components/PurchaseDialog';
+import { getWineListResult } from '@/lib/storage';
 import type { Koopjeschecker } from '@/lib/types';
-import { genId, formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 
 function QuickFact({ label, value }: { label: string; value: string }) {
   return (
@@ -24,9 +25,9 @@ function QuickFact({ label, value }: { label: string; value: string }) {
 
 export default function WineDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [kc, setKc] = useState<Koopjeschecker | null>(null);
-  const [added, setAdded] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [kcOpen, setKcOpen] = useState(false);
   const backHref = '/scan/wine-list/result';
 
@@ -36,26 +37,16 @@ export default function WineDetailPage({ params }: { params: { id: string } }) {
       const entry = listResult.entries.find((e) => e.id === params.id);
       if (entry) {
         setKc(entry.koopjeschecker);
-        const cellar = getCellar();
-        const exists = cellar.some(
-          (w) => w.koopjeschecker.general.producer === entry.koopjeschecker.general.producer &&
-            w.koopjeschecker.general.vintage === entry.koopjeschecker.general.vintage
-        );
-        if (exists) setAdded(true);
         return;
       }
     }
     router.replace('/scan/wine-list/result');
   }, [params.id, router]);
 
-  function handleAdd() {
-    if (!kc || added) return;
-    addCellarWine({
-      id: genId('cellar'), producer: kc.general.producer, wineName: kc.general.wineName,
-      vintage: kc.general.vintage, quantity: 1, purchasePrice: kc.general.price ?? 0,
-      personalRating: 0, notes: '', koopjeschecker: kc, addedAt: new Date().toISOString(),
-    });
-    setAdded(true);
+  function handleSaved() {
+    setDialogOpen(false);
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 3000);
   }
 
   if (!kc) return null;
@@ -118,15 +109,25 @@ export default function WineDetailPage({ params }: { params: { id: string } }) {
           <FeedbackBar kcId={kc.id} producer={kc.general.producer} wineName={kc.general.wineName} context="wine_list" />
         </div>
 
-        {/* Add to cellar */}
+        {/* I Bought This */}
         <div className="mx-5">
-          <button onClick={handleAdd} disabled={added}
-            className={`flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold transition-colors ${added ? 'bg-navy-700 text-cream-300/40' : 'bg-gold-500 text-navy-950 active:bg-gold-400'}`}
+          <button
+            onClick={() => setDialogOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-gold-500 py-3.5 text-sm font-semibold text-navy-950 transition-colors active:bg-gold-400"
           >
-            {added ? <><Check size={16} /> Added to Cellar</> : <><Plus size={16} /> Add to My Cellar</>}
+            {justSaved ? <><Check size={16} /> Purchase Recorded</> : <><ShoppingBag size={16} /> I Bought This</>}
           </button>
         </div>
       </div>
+
+      {kc && (
+        <PurchaseDialog
+          kc={kc}
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          onSaved={handleSaved}
+        />
+      )}
     </>
   );
 }

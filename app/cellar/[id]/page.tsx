@@ -6,6 +6,7 @@ import { Trash2, Save, Star } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
 import KoopjesChecker from '@/components/KoopjesChecker';
+import ProvenanceBadge from '@/components/ProvenanceBadge';
 import { getCellarWine, updateCellarWine, deleteCellarWine } from '@/lib/storage';
 import type { CellarWine } from '@/lib/types';
 import { formatCurrency, WINDOW_STATUS_LABEL, deriveWindowStatus } from '@/lib/utils';
@@ -45,11 +46,13 @@ export default function CellarWineDetailPage({ params }: { params: { id: string 
 
   function handleSave() {
     if (!wine) return;
+    const rating = Math.min(10, Math.max(0, parseFloat(personalRating) || 0));
     updateCellarWine(wine.id, {
       quantity: Math.max(0, parseInt(quantity, 10) || 0),
       purchasePrice: parseFloat(purchasePrice) || 0,
-      personalRating: Math.min(10, Math.max(0, parseFloat(personalRating) || 0)),
+      personalRating: rating,
       notes: notes.trim(),
+      provenance: rating > 0 ? { ...wine.provenance, personalRating: { source: 'user' } } : wine.provenance,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -83,12 +86,16 @@ export default function CellarWineDetailPage({ params }: { params: { id: string 
             <div className="text-right">
               <p className="font-display text-2xl text-cream-100">×{wine.quantity}</p>
               {wine.purchasePrice > 0 && (
-                <p className="text-xs text-cream-300/50">{formatCurrency(wine.purchasePrice)} / btl</p>
+                <p className="text-xs text-cream-300/50">
+                  {formatCurrency(wine.purchasePrice)} / btl
+                  <ProvenanceBadge provenance={wine.provenance?.purchasePrice} />
+                </p>
               )}
               {wine.personalRating > 0 && (
                 <p className="mt-1 flex items-center justify-end gap-1 text-xs text-gold-400">
                   <Star size={10} fill="currentColor" />
                   {wine.personalRating.toFixed(1)}
+                  <ProvenanceBadge provenance={wine.provenance?.personalRating} />
                 </p>
               )}
             </div>

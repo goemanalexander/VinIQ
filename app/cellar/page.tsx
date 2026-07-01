@@ -171,7 +171,7 @@ export default function CellarPage() {
           </Card>
         ) : (
           <Card className="py-6 text-center">
-            <p className="text-sm text-cream-300/60">No results for "{query}"</p>
+            <p className="text-sm text-cream-300/60">No results for &quot;{query}&quot;</p>
           </Card>
         )}
       </div>

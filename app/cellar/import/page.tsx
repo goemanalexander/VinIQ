@@ -6,7 +6,7 @@ import { FileSpreadsheet, Download, Check, AlertCircle, Loader2, Trash2 } from '
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
 import { importFromFile, CSV_TEMPLATE_EXAMPLE } from '@/lib/import';
-import { getCellar, saveCellar, addCellarWine } from '@/lib/storage';
+import { getCellar, saveCellar } from '@/lib/storage';
 import type { CellarWine } from '@/lib/types';
 
 type ImportMode = 'replace' | 'merge';
