@@ -6,7 +6,9 @@ import { Plus, Search, FileUp } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
 import MatchStars from '@/components/MatchStars';
+import CellarIntelligenceSection from '@/components/CellarIntelligence';
 import { getCellar } from '@/lib/storage';
+import { getCellarIntelligence } from '@/lib/cellar-intelligence';
 import type { CellarWine } from '@/lib/types';
 import { deriveWindowStatus, WINDOW_STATUS_LABEL, formatCurrency, estimateCellarValue } from '@/lib/utils';
 
@@ -77,18 +79,8 @@ export default function CellarPage() {
       )
     : cellar;
 
-  // Statistics
   const totalBottles = cellar.reduce((s, w) => s + w.quantity, 0);
-  const purchaseValue = cellar.reduce((s, w) => s + w.purchasePrice * w.quantity, 0);
-  const estimatedTotal = cellar.reduce((s, w) => {
-    const status = deriveWindowStatus(w.koopjeschecker.drinkingWindow);
-    return s + estimateCellarValue(w.purchasePrice, status, w.personalRating) * w.quantity;
-  }, 0);
-  const ratedWines = cellar.filter((w) => w.personalRating > 0);
-  const avgRating =
-    ratedWines.length > 0
-      ? ratedWines.reduce((s, w) => s + w.personalRating, 0) / ratedWines.length
-      : 0;
+  const intel = cellar.length > 0 ? getCellarIntelligence(cellar) : null;
 
   return (
     <>
@@ -98,33 +90,8 @@ export default function CellarPage() {
       />
       <div className="px-5 pb-8 pt-4">
 
-        {/* Statistics */}
-        {cellar.length > 0 && (
-          <Card strong className="mb-5 grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] uppercase tracking-wide text-cream-300/50">Total Bottles</span>
-              <span className="font-display text-2xl text-cream-100">{totalBottles}</span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] uppercase tracking-wide text-cream-300/50">Avg. Rating</span>
-              <span className="font-display text-2xl text-cream-100">
-                {avgRating > 0 ? `${avgRating.toFixed(1)}` : '—'}
-              </span>
-            </div>
-            {purchaseValue > 0 && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] uppercase tracking-wide text-cream-300/50">Purchase Value</span>
-                <span className="font-display text-lg text-cream-100">{formatCurrency(purchaseValue)}</span>
-              </div>
-            )}
-            {estimatedTotal > 0 && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] uppercase tracking-wide text-cream-300/50">Est. Value</span>
-                <span className="font-display text-lg text-gold-300">{formatCurrency(estimatedTotal)}</span>
-              </div>
-            )}
-          </Card>
-        )}
+        {/* Cellar Intelligence */}
+        {intel && <CellarIntelligenceSection intel={intel} />}
 
         {/* Search */}
         <div className="relative mb-3">
