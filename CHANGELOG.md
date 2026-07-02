@@ -2,6 +2,11 @@
 
 All notable changes to VinIQ are documented in this file.
 
+## v0.3.1 — App Version Display
+
+### Improved
+- Added visible app version information to the Profile page.
+
 ## v0.3 — Cellar Intelligence
 
 ### New

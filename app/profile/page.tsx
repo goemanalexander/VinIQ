@@ -6,6 +6,7 @@ import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
 import { getCellar, getFeedback, getAiProfile, saveAiProfile } from '@/lib/storage';
 import { generateAiProfile } from '@/lib/profile-ai';
+import { APP_VERSION, APP_RELEASE_NAME, APP_COMMIT } from '@/lib/version';
 import type { AiTasteProfile } from '@/lib/types';
 
 const AXIS = [
@@ -145,6 +146,14 @@ export default function ProfilePage() {
           </p>
           <p className="text-xs">VinIQ · All data stored locally on this device.</p>
         </Card>
+
+        {/* App version */}
+        <div className="mt-8 text-center">
+          <p className="font-display text-sm text-cream-300/50">VinIQ</p>
+          <p className="mt-0.5 text-xs text-cream-300/40">{APP_VERSION}</p>
+          <p className="text-[11px] text-cream-300/30">{APP_RELEASE_NAME}</p>
+          <p className="mt-1 text-[10px] tracking-wide text-cream-300/25">Commit: {APP_COMMIT}</p>
+        </div>
       </div>
     </>
   );
