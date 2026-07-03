@@ -45,6 +45,21 @@ const THRESHOLDS = {
   // > +5 % → expensive
 } as const;
 
+export type PriceClassification = 'excellent' | 'good' | 'fair' | 'expensive';
+
+/**
+ * Shared price-vs-own-history classification, used both here (after a
+ * purchase) and by the Buying Advisor (before one), so the two can never
+ * disagree about what counts as an expensive price.
+ */
+export function classifyPriceVsAverage(currentPrice: number, historicalAvg: number): PriceClassification {
+  const pct = (currentPrice - historicalAvg) / historicalAvg;
+  if (pct <= THRESHOLDS.excellent) return 'excellent';
+  if (pct <= THRESHOLDS.good) return 'good';
+  if (pct <= THRESHOLDS.fair) return 'fair';
+  return 'expensive';
+}
+
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }

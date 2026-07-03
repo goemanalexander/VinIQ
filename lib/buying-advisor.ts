@@ -17,6 +17,7 @@ import type { CellarWine, Koopjeschecker } from './types';
 import { deriveWindowStatus } from './utils';
 import { findExistingCellarEntry } from './purchase-ledger';
 import { detectStyle } from './cellar-intelligence';
+import { classifyPriceVsAverage } from './purchase-intelligence';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -55,6 +56,12 @@ interface PriceAssessment {
   known: boolean;
   /** true when price is clearly excellent vs the user's OWN history */
   excellent: boolean;
+  /**
+   * How far the scanned price sits above the user's own average for this
+   * exact wine (0.2 = 20% above). null when there is no own history to
+   * compare against or no scanned price. Drives the price-over-history caps.
+   */
+  pctAboveOwn: number | null;
 }
 
 function assessPrice(
@@ -70,43 +77,48 @@ function assessPrice(
       context: 'No price was detected on this scan, so value could not be judged.',
       known: false,
       excellent: false,
+      pctAboveOwn: null,
     };
   }
 
-  // Best signal: Alexander's own purchase history for this exact wine
+  // Best signal: Alexander's own purchase history for this exact wine.
+  // Classification is shared with Purchase Intelligence so the pre-purchase
+  // advice and the post-purchase verdict can never contradict each other.
   if (existing && existing.purchasePrice > 0) {
-    const diff = price - existing.purchasePrice;
-    const pct = diff / existing.purchasePrice;
-    if (pct <= -0.08) {
-      return {
-        score: 95,
-        context: `€${price} is well below the €${existing.purchasePrice.toFixed(2)} you paid on average for this wine.`,
-        known: true,
-        excellent: true,
-      };
+    const avg = existing.purchasePrice;
+    const pct = (price - avg) / avg;
+    const cls = classifyPriceVsAverage(price, avg);
+    const pctAboveOwn = pct > 0 ? pct : null;
+
+    switch (cls) {
+      case 'excellent':
+        return {
+          score: 95,
+          context: `€${price} is well below the €${avg.toFixed(2)} you paid on average for this wine.`,
+          known: true, excellent: true, pctAboveOwn,
+        };
+      case 'good':
+        return {
+          score: 80,
+          context: `€${price} is slightly below your average of €${avg.toFixed(2)} for this wine.`,
+          known: true, excellent: false, pctAboveOwn,
+        };
+      case 'fair':
+        return {
+          score: 60,
+          context: `€${price} is in line with the €${avg.toFixed(2)} you usually pay for this wine.`,
+          known: true, excellent: false, pctAboveOwn,
+        };
+      case 'expensive': {
+        // Graded: the further above his own history, the harder the penalty
+        const score = pct > 0.3 ? 5 : pct > 0.2 ? 15 : pct > 0.1 ? 25 : 35;
+        const context =
+          pct > 0.3
+            ? `€${price} is well above the €${avg.toFixed(2)} you usually pay for this wine.`
+            : `€${price} is above the €${avg.toFixed(2)} you usually pay for this wine.`;
+        return { score, context, known: true, excellent: false, pctAboveOwn };
+      }
     }
-    if (pct <= -0.02) {
-      return {
-        score: 80,
-        context: `€${price} is slightly below your average of €${existing.purchasePrice.toFixed(2)} for this wine.`,
-        known: true,
-        excellent: false,
-      };
-    }
-    if (pct <= 0.05) {
-      return {
-        score: 60,
-        context: `€${price} is in line with the €${existing.purchasePrice.toFixed(2)} you usually pay for this wine.`,
-        known: true,
-        excellent: false,
-      };
-    }
-    return {
-      score: 35,
-      context: `€${price} is above the €${existing.purchasePrice.toFixed(2)} you usually pay for this wine.`,
-      known: true,
-      excellent: false,
-    };
   }
 
   // Second signal: average bottle price across the cellar
@@ -120,6 +132,7 @@ function assessPrice(
         context: `€${price} is below your typical bottle spend of €${cellarAvg.toFixed(2)}.`,
         known: true,
         excellent: false,
+        pctAboveOwn: null,
       };
     }
     if (price <= cellarAvg * 1.4) {
@@ -128,6 +141,7 @@ function assessPrice(
         context: `€${price} is around your typical bottle spend of €${cellarAvg.toFixed(2)}.`,
         known: true,
         excellent: false,
+        pctAboveOwn: null,
       };
     }
     return {
@@ -135,6 +149,7 @@ function assessPrice(
       context: `€${price} is above your typical bottle spend of €${cellarAvg.toFixed(2)} — a premium purchase.`,
       known: true,
       excellent: false,
+      pctAboveOwn: null,
     };
   }
 
@@ -144,6 +159,7 @@ function assessPrice(
     context: `€${price} detected — no purchase history yet to compare it against.`,
     known: true,
     excellent: false,
+    pctAboveOwn: null,
   };
 }
 
@@ -215,33 +231,48 @@ function assessBalance(
 // Verdict, quantity, confidence
 // ---------------------------------------------------------------------------
 
+/** Verdict order, worst → best, for applying caps. */
+const VERDICT_ORDER: BuyingVerdict[] = ['avoid', 'skip', 'consider', 'buy', 'strong_buy'];
+
+function capVerdict(verdict: BuyingVerdict, cap: BuyingVerdict): BuyingVerdict {
+  return VERDICT_ORDER.indexOf(verdict) > VERDICT_ORDER.indexOf(cap) ? cap : verdict;
+}
+
 function deriveVerdict(
   score: number,
   matchPercent: number,
   pastPeak: boolean,
-  priceKnown: boolean,
+  price: PriceAssessment,
   lowConfidenceScan: boolean,
-  owned: number,
-  priceExcellent: boolean
+  owned: number
 ): BuyingVerdict {
   // Hard floor: a wine that clearly misses his palate is never a buy, whatever the deal
   if (matchPercent < 40) return score >= 30 ? 'skip' : 'avoid';
   let verdict: BuyingVerdict =
     score >= 85 ? 'strong_buy' : score >= 70 ? 'buy' : score >= 50 ? 'consider' : score >= 30 ? 'skip' : 'avoid';
+
   // Past-peak wines are at best a considered single-bottle punt
-  if (pastPeak && (verdict === 'strong_buy' || verdict === 'buy')) verdict = 'consider';
+  if (pastPeak) verdict = capVerdict(verdict, 'consider');
+
   // Never a Strong Buy without price data or on a shaky label read — the data
   // doesn't support that level of certainty, whatever the score says
-  if (verdict === 'strong_buy' && (!priceKnown || lowConfidenceScan)) verdict = 'buy';
+  if (!price.known || lowConfidenceScan) verdict = capVerdict(verdict, 'buy');
+
+  // Price-over-own-history caps (aligned with Purchase Intelligence: anything
+  // >5% above his own average is an "expensive" purchase the moment it's made,
+  // so the advisor must not talk him into it beforehand).
+  const pctOver = price.pctAboveOwn ?? 0;
+  if (pctOver > 0.3) verdict = capVerdict(verdict, 'skip');
+  else if (pctOver > 0.2) verdict = capVerdict(verdict, 'consider');
+  else if (pctOver > 0.05) verdict = capVerdict(verdict, 'buy');
+
   // The verdict judges the BUYING decision, not just the wine: with deep stock
   // of the same wine, buying more is rarely the right call however good it is.
   // 12+: cap at consider — unless the price clearly beats his own history,
   // which justifies a top-up (buy), but never a strong buy.
-  if (owned >= 12 && (verdict === 'strong_buy' || verdict === 'buy')) {
-    verdict = priceExcellent ? 'buy' : 'consider';
-  } else if (owned >= 6 && verdict === 'strong_buy') {
-    verdict = 'buy';
-  }
+  if (owned >= 12) verdict = capVerdict(verdict, price.excellent ? 'buy' : 'consider');
+  else if (owned >= 6) verdict = capVerdict(verdict, 'buy');
+
   return verdict;
 }
 
@@ -250,11 +281,21 @@ function deriveQuantity(
   owned: number,
   price: PriceAssessment,
   matchPercent: number,
-  pastPeak: boolean
+  pastPeak: boolean,
+  confidence: BuyingConfidence
 ): RecommendedQuantity {
+  const pctOver = price.pctAboveOwn ?? 0;
+
+  // >30% above his own price: a token bottle at most, and only for a wine he loves
+  if (pctOver > 0.3) return matchPercent >= 85 ? 1 : 0;
+
   if (verdict === 'skip' || verdict === 'avoid') return 0;
   if (pastPeak) return verdict === 'consider' ? 1 : 0;
   if (verdict === 'consider') return 1;
+
+  // An "expensive" price vs his own history (Purchase Intelligence terms):
+  // never stock up at a price he'd regret the moment it hits the ledger
+  if (pctOver > 0.05) return 1;
 
   // 12+ owned: usually stop, max a top-up bottle even on a great deal
   if (owned >= 12) return 1;
@@ -266,7 +307,9 @@ function deriveQuantity(
 
   // strong_buy
   if (!price.known) return 3; // never recommend a case without price data
-  if (price.excellent && matchPercent >= 90 && owned <= 2) return 12;
+  // A full case only in the exceptional alignment: outstanding match, a price
+  // that clearly beats his own history, low stock, and high-confidence data
+  if (price.excellent && matchPercent >= 90 && owned <= 2 && confidence === 'high') return 12;
   return 6;
 }
 
@@ -315,13 +358,13 @@ export function getBuyingAdvice(kc: Koopjeschecker, cellar: CellarWine[]): Buyin
     decisionScore,
     matchPercent,
     pastPeak,
-    price.known,
+    price,
     kc.scanMetadata?.confidence === 'low',
-    owned,
-    price.excellent
+    owned
   );
-  const recommendedQuantity = deriveQuantity(verdict, owned, price, matchPercent, pastPeak);
   const confidence = deriveConfidence(kc, price, cellar.length === 0);
+  const recommendedQuantity = deriveQuantity(verdict, owned, price, matchPercent, pastPeak, confidence);
+  const pctOver = price.pctAboveOwn ?? 0;
 
   // ── Reasoning bullets (3–5) ───────────────────────────────────────────────
   const reasoning: string[] = [];
@@ -331,6 +374,9 @@ export function getBuyingAdvice(kc: Koopjeschecker, cellar: CellarWine[]): Buyin
   else reasoning.push(`Poor match for your taste profile (${matchPercent}%) — the deciding factor.`);
 
   reasoning.push(price.context);
+  if (matchPercent >= 85 && pctOver > 0.1) {
+    reasoning.push('Good taste match, but not a strong buying moment — wait for a better price.');
+  }
   reasoning.push(window.note);
   if (balance.note) reasoning.push(balance.note);
   if (owned > 0) {
@@ -344,6 +390,14 @@ export function getBuyingAdvice(kc: Koopjeschecker, cellar: CellarWine[]): Buyin
 
   // ── Warnings ──────────────────────────────────────────────────────────────
   const warnings: string[] = [];
+  if (pctOver > 0.3) {
+    warnings.push(`Well above what you usually pay for this wine (${Math.round(pctOver * 100)}% higher) — this is not the moment to buy.`);
+  } else if (pctOver > 0.1) {
+    warnings.push('This is above what you usually pay for this wine.');
+  }
+  if (owned > 0 && pctOver > 0.05 && pctOver <= 0.3) {
+    warnings.push(`You already own ${owned} bottle${owned !== 1 ? 's' : ''}, and this price is not especially attractive.`);
+  }
   const profile = kc.structure.profile;
   if (profile.acidity >= 8) warnings.push('High acidity — historically less suited to your palate.');
   const age = kc.general.vintage > 0 ? new Date().getFullYear() - kc.general.vintage : null;

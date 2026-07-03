@@ -2,6 +2,14 @@
 
 All notable changes to VinIQ are documented in this file.
 
+## v0.4.1 — Buying Advisor Calibration
+
+### Improved
+- Buying Advisor is stricter when scanned price is above Alexander's own purchase history
+- Recommended quantity now better matches the verdict
+- Buying Advisor is better aligned with Purchase Intelligence
+- Added clearer warnings for expensive repeat purchases
+
 ## v0.4.0 — Buying Advisor
 
 ### New
