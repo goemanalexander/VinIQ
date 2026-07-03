@@ -2,6 +2,14 @@
 
 All notable changes to VinIQ are documented in this file.
 
+## v0.3.2 — Scan Loading Improvements
+
+### Improved
+- Premium stepped loading screen while a scan is analysed (label reading → identification → provenance check → personal analysis), with image preview.
+- Calm reassurance message when analysis takes longer than 8 seconds.
+- Client-side image downscaling before upload — large photos now upload much faster without hurting label readability.
+- Scans can no longer hang indefinitely: requests time out with a clear retry message.
+
 ## v0.3.1 — App Version Display
 
 ### Improved

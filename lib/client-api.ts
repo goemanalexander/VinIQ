@@ -11,6 +11,9 @@ export interface VisionApiResult {
 
 export type MediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
 
+/** Client-side ceiling — the server route itself times out at 60s. */
+const REQUEST_TIMEOUT_MS = 75_000;
+
 export async function callVisionApi(
   endpoint: '/api/analyze-wine-list' | '/api/analyze-bottle' | '/api/analyze-promotion',
   imageBase64: string,
@@ -21,6 +24,7 @@ export async function callVisionApi(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64, mediaType }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     const data = await response.json().catch(() => ({}));
@@ -31,6 +35,9 @@ export async function callVisionApi(
 
     return { text: data.text ?? '' };
   } catch (err) {
+    if (err instanceof DOMException && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+      return { text: '', error: 'The analysis timed out. Please try again — a clearer or smaller photo often helps.' };
+    }
     return { text: '', error: err instanceof Error ? err.message : 'Network error' };
   }
 }
