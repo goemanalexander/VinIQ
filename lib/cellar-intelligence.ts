@@ -71,7 +71,7 @@ const STYLE_RULES: { style: string; test: (name: string, region: string) => bool
   { style: 'Bordeaux',       test: (n, r) => n.includes('bordeaux') || r.includes('bordeaux') || r.includes('médoc') || r.includes('medoc') },
 ];
 
-function detectStyle(wine: CellarWine): string {
+export function detectStyle(wine: CellarWine): string {
   const name = `${wine.producer} ${wine.wineName}`.toLowerCase();
   const region = wine.koopjeschecker.general.region.toLowerCase();
   for (const rule of STYLE_RULES) {

@@ -2,6 +2,17 @@
 
 All notable changes to VinIQ are documented in this file.
 
+## v0.4.0 — Buying Advisor
+
+### New
+- Added deterministic Buying Advisor for scan results
+- Added personal buy/skip verdicts
+- Added recommended purchase quantity
+- Added cellar-aware buying context
+
+### Improved
+- Scan results now help decide whether and how much to buy
+
 ## v0.3.2 — Scan Loading Improvements
 
 ### Improved

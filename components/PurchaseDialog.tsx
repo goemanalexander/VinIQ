@@ -15,6 +15,8 @@ interface Props {
   open: boolean;
   /** Known retailer from the originating flow (e.g. a promotion scan). Always editable. */
   retailer?: string;
+  /** Prefill for the quantity field (e.g. the Buying Advisor's recommendation). Min 1. */
+  defaultQuantity?: number;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -110,7 +112,7 @@ function InsightsCard({ insight }: { insight: PurchaseInsight }) {
 // Main dialog
 // ---------------------------------------------------------------------------
 
-export default function PurchaseDialog({ kc, open, retailer: initialRetailer, onClose, onSaved }: Props) {
+export default function PurchaseDialog({ kc, open, retailer: initialRetailer, defaultQuantity, onClose, onSaved }: Props) {
   // Quantity is edited as free text so mobile numeric keypads can clear/replace
   // it naturally; the committed integer is derived and always clamped to >= 1.
   const [quantityInput, setQuantityInput] = useState('1');
@@ -136,7 +138,7 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, on
     setInsight(null);
     setIsSaving(false);
     savingRef.current = false;
-    setQuantityInput('1');
+    setQuantityInput(String(Math.max(1, Math.floor(defaultQuantity ?? 1))));
     setDate(today());
 
     const cellar = getCellar();
@@ -154,12 +156,15 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, on
 
     setPrice(kc.general.price ? String(kc.general.price) : '');
 
-    // Auto-focus + fully select the default quantity so the first tap of a digit replaces it
-    requestAnimationFrame(() => {
+    // Auto-focus + fully select the default quantity so the first tap of a digit
+    // replaces it. Deferred past React's commit: the state updates above rewrite
+    // the input value after mount, which would collapse an earlier selection.
+    const focusTimer = setTimeout(() => {
       quantityRef.current?.focus();
       quantityRef.current?.select();
-    });
-  }, [open, kc, initialRetailer]);
+    }, 120);
+    return () => clearTimeout(focusTimer);
+  }, [open, kc, initialRetailer, defaultQuantity]);
 
   function handleSave() {
     if (savingRef.current) return; // blocks a genuine double-tap synchronously

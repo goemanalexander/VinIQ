@@ -11,7 +11,10 @@ import KoopjesChecker from '@/components/KoopjesChecker';
 import ScanDebugBlock from '@/components/ScanDebugBlock';
 import FeedbackBar from '@/components/FeedbackBar';
 import PurchaseDialog from '@/components/PurchaseDialog';
-import { getBottleResult } from '@/lib/storage';
+import BuyingAdvisorCard from '@/components/BuyingAdvisorCard';
+import { getBottleResult, getCellar } from '@/lib/storage';
+import { getBuyingAdvice } from '@/lib/buying-advisor';
+import type { BuyingAdvice } from '@/lib/buying-advisor';
 import type { Koopjeschecker } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 
@@ -33,6 +36,7 @@ function QuickFact({ label, value }: { label: string; value: string }) {
 export default function ScanBottleResultPage() {
   const router = useRouter();
   const [kc, setKc] = useState<Koopjeschecker | null>(null);
+  const [advice, setAdvice] = useState<BuyingAdvice | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [kcOpen, setKcOpen] = useState(false);
@@ -41,6 +45,7 @@ export default function ScanBottleResultPage() {
     const result = getBottleResult();
     if (!result) { router.replace('/scan/bottle'); return; }
     setKc(result);
+    setAdvice(getBuyingAdvice(result, getCellar()));
   }, [router]);
 
   function handleSaved() {
@@ -101,6 +106,14 @@ export default function ScanBottleResultPage() {
           </Card>
         </div>
 
+        {/* Buying Advisor */}
+        {advice && (
+          <div className="mx-5 mb-5">
+            <h3 className="mb-2 font-display text-sm uppercase tracking-wide text-gold-400/80">Should you buy this?</h3>
+            <BuyingAdvisorCard advice={advice} />
+          </div>
+        )}
+
         {/* Why? */}
         <div className="mx-5 mb-5">
           <h3 className="mb-2 font-display text-sm uppercase tracking-wide text-gold-400/80">Why?</h3>
@@ -151,6 +164,7 @@ export default function ScanBottleResultPage() {
         <PurchaseDialog
           kc={kc}
           open={dialogOpen}
+          defaultQuantity={advice && advice.recommendedQuantity > 0 ? advice.recommendedQuantity : 1}
           onClose={() => setDialogOpen(false)}
           onSaved={handleSaved}
         />
