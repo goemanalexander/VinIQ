@@ -64,6 +64,28 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/** Lowest / highest / average price ever paid for one wine, from its ledger. */
+export interface PurchaseStats {
+  lowest: number;
+  highest: number;
+  average: number;        // quantity-weighted
+  timesPurchased: number; // number of priced ledger entries
+}
+
+/** Returns null when the wine has no priced purchases to summarise. */
+export function getPurchaseStats(wine: CellarWine): PurchaseStats | null {
+  const priced = (wine.purchases ?? []).filter((p) => p.pricePerBottle > 0);
+  if (priced.length === 0) return null;
+  const qty = priced.reduce((s, p) => s + p.quantity, 0);
+  const value = priced.reduce((s, p) => s + p.quantity * p.pricePerBottle, 0);
+  return {
+    lowest: Math.min(...priced.map((p) => p.pricePerBottle)),
+    highest: Math.max(...priced.map((p) => p.pricePerBottle)),
+    average: round2(value / qty),
+    timesPurchased: priced.length,
+  };
+}
+
 /**
  * Analyses the purchase just recorded.
  *

@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import type { KeyboardEvent, FocusEvent, RefObject } from 'react';
 import { Minus, Plus, X, ShoppingBag, Check } from 'lucide-react';
 import { getCellar, saveCellar } from '@/lib/storage';
-import { findExistingCellarEntry, recordPurchase } from '@/lib/purchase-ledger';
-import { analysePurchase } from '@/lib/purchase-intelligence';
-import type { PurchaseInsight } from '@/lib/purchase-intelligence';
+import { findExistingCellarEntry, recordPurchase, getKnownRetailers } from '@/lib/purchase-ledger';
+import { analysePurchase, getPurchaseStats, classifyPriceVsAverage } from '@/lib/purchase-intelligence';
+import type { PurchaseInsight, PurchaseStats } from '@/lib/purchase-intelligence';
 import type { Koopjeschecker } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 
@@ -123,7 +123,10 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
   const [retailer, setRetailer]       = useState(initialRetailer ?? '');
   const [existingQty, setExistingQty] = useState(0);
   const [existingAvgPrice, setExistingAvgPrice] = useState(0);
+  const [existingStats, setExistingStats] = useState<PurchaseStats | null>(null);
+  const [knownRetailers, setKnownRetailers] = useState<string[]>([]);
   const [insight, setInsight]         = useState<PurchaseInsight | null>(null);
+  const [savedSummary, setSavedSummary] = useState<{ bottles: number; avgPrice: number } | null>(null);
   const [isSaving, setIsSaving]       = useState(false);
 
   const quantityRef = useRef<HTMLInputElement>(null);
@@ -136,6 +139,7 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
     if (!open) return;
     // Reset to form view on every open
     setInsight(null);
+    setSavedSummary(null);
     setIsSaving(false);
     savingRef.current = false;
     setQuantityInput(String(Math.max(1, Math.floor(defaultQuantity ?? 1))));
@@ -145,11 +149,11 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
     const existing = findExistingCellarEntry(kc, cellar);
     setExistingQty(existing?.quantity ?? 0);
     setExistingAvgPrice(existing?.purchasePrice ?? 0);
+    setExistingStats(existing ? getPurchaseStats(existing) : null);
+    setKnownRetailers(getKnownRetailers(cellar));
 
-    // "Known" retailer = explicitly passed in (e.g. a future promotion-scan
-    // capture) or the last retailer used for this exact wine. The full
-    // deduplicated history (`purchases.map(p => p.retailer)`) is the natural
-    // future data source for a retailer autocomplete — not wired up yet.
+    // Prefill: explicitly passed retailer (e.g. a promotion scan) wins,
+    // then the last retailer used for this exact wine. Always editable.
     const purchases = existing?.purchases ?? [];
     const lastRetailer = purchases[purchases.length - 1]?.retailer;
     setRetailer(initialRetailer || lastRetailer || '');
@@ -192,6 +196,7 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
         w.koopjeschecker.general.vintage === kc.general.vintage
     );
     if (updatedWine) {
+      setSavedSummary({ bottles: updatedWine.quantity, avgPrice: updatedWine.purchasePrice });
       setInsight(analysePurchase(updatedWine, currentPrice));
     } else {
       onSaved();
@@ -241,6 +246,29 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
     e.currentTarget.blur();
   }
 
+  // Live comparison of the typed price against this wine's own history —
+  // same classification Purchase Intelligence will apply after saving.
+  const typedPrice = parsePrice(price);
+  let priceComparison: { text: string; cls: string } | null = null;
+  if (existingStats && typedPrice > 0) {
+    const cls = classifyPriceVsAverage(typedPrice, existingStats.average);
+    priceComparison =
+      cls === 'excellent' || cls === 'good'
+        ? { text: 'Current price is below your usual price.', cls: 'text-green-400/80' }
+        : cls === 'fair'
+        ? { text: 'Current price is in line with your usual price.', cls: 'text-cream-300/55' }
+        : { text: 'Current price is above your usual price.', cls: 'text-gold-400/80' };
+  }
+
+  // Retailer suggestions from purchase history: case-insensitive filter on
+  // the typed value, never suggesting what is already typed. Manual entry
+  // always works — tapping a chip just fills the field.
+  const retailerQuery = retailer.trim().toLowerCase();
+  const retailerSuggestions = knownRetailers
+    .filter((r) => r.toLowerCase() !== retailerQuery)
+    .filter((r) => retailerQuery === '' || r.toLowerCase().includes(retailerQuery))
+    .slice(0, 4);
+
   if (!open) return null;
 
   return (
@@ -279,6 +307,18 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
         {/* ── Insights view ── */}
         {insight ? (
           <>
+            {savedSummary && (
+              <div className="mb-4">
+                <p className="text-sm text-cream-200">
+                  You now own {savedSummary.bottles} bottle{savedSummary.bottles !== 1 ? 's' : ''} of this wine.
+                </p>
+                {savedSummary.avgPrice > 0 && (
+                  <p className="mt-0.5 text-xs text-cream-300/55">
+                    Average purchase price: {formatCurrency(savedSummary.avgPrice)} / bottle.
+                  </p>
+                )}
+              </div>
+            )}
             <InsightsCard insight={insight} />
             <button
               onClick={handleDone}
@@ -290,11 +330,11 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
         ) : (
           /* ── Form view ── */
           <>
-            {/* Already in cellar */}
+            {/* Already in cellar / repeat purchase context */}
             {existingQty > 0 && (
               <div className="mb-4 rounded-xl border border-gold-500/20 bg-gold-500/5 px-4 py-3">
                 <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gold-400/60">
-                  Already in your cellar
+                  {existingStats ? 'You’ve bought this wine before' : 'Already in your cellar'}
                 </p>
                 <div className="flex items-center gap-4 text-sm text-cream-200">
                   <span>
@@ -305,6 +345,16 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
                     <span className="text-cream-300/60">avg {formatCurrency(existingAvgPrice)} / btl</span>
                   )}
                 </div>
+                {existingStats && (
+                  <p className="mt-1.5 text-[11px] text-cream-300/55">
+                    Lowest paid: {formatCurrency(existingStats.lowest)}
+                    {' · '}Highest paid: {formatCurrency(existingStats.highest)}
+                    {' · '}Average paid: {formatCurrency(existingStats.average)}
+                  </p>
+                )}
+                {priceComparison && (
+                  <p className={`mt-1 text-[11px] ${priceComparison.cls}`}>{priceComparison.text}</p>
+                )}
               </div>
             )}
 
@@ -401,6 +451,20 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
                   placeholder="e.g. Albert Heijn, Gall & Gall"
                   className="w-full rounded-xl border border-gold-500/15 bg-navy-950/60 px-4 py-2.5 text-sm text-cream-100 placeholder:text-cream-300/25 focus:border-gold-500/35 focus:outline-none"
                 />
+                {retailerSuggestions.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {retailerSuggestions.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRetailer(r)}
+                        className="rounded-full border border-navy-600/80 px-3 py-1 text-xs text-cream-300/60 transition-colors active:border-gold-500/30 active:text-gold-300"
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

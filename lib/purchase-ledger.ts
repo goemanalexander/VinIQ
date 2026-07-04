@@ -19,6 +19,30 @@ export interface PurchaseInput {
   retailer?: string;
 }
 
+/**
+ * All retailer names used across the purchase history, deduplicated
+ * case-insensitively (first-seen casing of the most recent use wins),
+ * most recently used first. Feeds the retailer suggestions in the
+ * purchase dialog — deliberately not a retailer database.
+ */
+export function getKnownRetailers(cellar: CellarWine[]): string[] {
+  const byKey = new Map<string, { name: string; lastUsed: string }>();
+  for (const w of cellar) {
+    for (const p of w.purchases ?? []) {
+      const raw = p.retailer?.trim();
+      if (!raw) continue;
+      const key = raw.toLowerCase();
+      const current = byKey.get(key);
+      if (!current || p.date > current.lastUsed) {
+        byKey.set(key, { name: raw, lastUsed: p.date });
+      }
+    }
+  }
+  return [...byKey.values()]
+    .sort((a, b) => b.lastUsed.localeCompare(a.lastUsed))
+    .map((v) => v.name);
+}
+
 /** Finds an existing cellar entry for this KoopjesChecker (producer + wineName + vintage). */
 export function findExistingCellarEntry(
   kc: Koopjeschecker,

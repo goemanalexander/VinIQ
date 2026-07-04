@@ -2,6 +2,14 @@
 
 All notable changes to VinIQ are documented in this file.
 
+## v0.4.2 — Purchase Flow Polish
+
+### Improved
+- Retailer suggestions in the purchase dialog, based on previously used retailers (deduplicated, manual entry preserved)
+- Post-purchase confirmation now states the updated bottle count and average purchase price
+- Repeat purchases show lowest / highest / average price ever paid for the wine
+- Live indication whether the entered price is above, below, or in line with your usual price
+
 ## v0.4.1 — Buying Advisor Calibration
 
 ### Improved
