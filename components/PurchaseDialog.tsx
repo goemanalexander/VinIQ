@@ -8,7 +8,6 @@ import { findExistingCellarEntry, recordPurchase, getKnownRetailers } from '@/li
 import { analysePurchase, getPurchaseStats, classifyPriceVsAverage } from '@/lib/purchase-intelligence';
 import type { PurchaseInsight, PurchaseStats } from '@/lib/purchase-intelligence';
 import type { Koopjeschecker } from '@/lib/types';
-import { formatCurrency } from '@/lib/utils';
 
 interface Props {
   kc: Koopjeschecker;
@@ -29,6 +28,18 @@ function today(): string {
 function parsePrice(raw: string): number {
   const n = parseFloat(raw.replace(',', '.'));
   return isNaN(n) ? 0 : n;
+}
+
+/**
+ * The app-wide formatCurrency() rounds to whole euros by design (cellar
+ * value tiles etc.). Purchase-price comparisons in this dialog are exactly
+ * about cent-level precision, so they use this local, always-2-decimal
+ * formatter instead — a €20.48 average must never render as "€20".
+ */
+function formatPricePrecise(value: number): string {
+  return new Intl.NumberFormat('en-IE', {
+    style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function selectAllOnFocus(e: FocusEvent<HTMLInputElement>) {
@@ -71,7 +82,7 @@ function InsightsCard({ insight }: { insight: PurchaseInsight }) {
       {/* Price diff sentence */}
       {!isInfoOnly && insight.priceDifference !== null && (
         <p className="mb-3 text-sm text-cream-300/80">
-          {formatCurrency(insight.priceDifference)}{' '}
+          {formatPricePrecise(insight.priceDifference)}{' '}
           <span className={insight.priceIsBelow ? 'text-green-400' : 'text-burgundy-300'}>
             {insight.priceIsBelow ? 'below' : 'above'}
           </span>{' '}
@@ -91,13 +102,13 @@ function InsightsCard({ insight }: { insight: PurchaseInsight }) {
           <>
             <div>
               <p className="font-display text-lg text-cream-100">
-                {insight.averagePurchasePrice > 0 ? formatCurrency(insight.averagePurchasePrice) : '—'}
+                {insight.averagePurchasePrice > 0 ? formatPricePrecise(insight.averagePurchasePrice) : '—'}
               </p>
-              <p className="text-[10px] uppercase tracking-wide text-cream-300/45">Avg price</p>
+              <p className="text-[10px] uppercase tracking-wide text-cream-300/45">Previous avg</p>
             </div>
             <div>
               <p className={`font-display text-lg ${insight.priceIsBelow ? 'text-green-400' : 'text-burgundy-300'}`}>
-                {insight.currentPrice > 0 ? formatCurrency(insight.currentPrice) : '—'}
+                {insight.currentPrice > 0 ? formatPricePrecise(insight.currentPrice) : '—'}
               </p>
               <p className="text-[10px] uppercase tracking-wide text-cream-300/45">This purchase</p>
             </div>
@@ -314,7 +325,7 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
                 </p>
                 {savedSummary.avgPrice > 0 && (
                   <p className="mt-0.5 text-xs text-cream-300/55">
-                    Average purchase price: {formatCurrency(savedSummary.avgPrice)} / bottle.
+                    Average purchase price: {formatPricePrecise(savedSummary.avgPrice)} / bottle.
                   </p>
                 )}
               </div>
@@ -342,14 +353,14 @@ export default function PurchaseDialog({ kc, open, retailer: initialRetailer, de
                     {' '}{existingQty === 1 ? 'bottle' : 'bottles'}
                   </span>
                   {existingAvgPrice > 0 && (
-                    <span className="text-cream-300/60">avg {formatCurrency(existingAvgPrice)} / btl</span>
+                    <span className="text-cream-300/60">avg {formatPricePrecise(existingAvgPrice)} / btl</span>
                   )}
                 </div>
                 {existingStats && (
                   <p className="mt-1.5 text-[11px] text-cream-300/55">
-                    Lowest paid: {formatCurrency(existingStats.lowest)}
-                    {' · '}Highest paid: {formatCurrency(existingStats.highest)}
-                    {' · '}Average paid: {formatCurrency(existingStats.average)}
+                    Lowest paid: {formatPricePrecise(existingStats.lowest)}
+                    {' · '}Highest paid: {formatPricePrecise(existingStats.highest)}
+                    {' · '}Average paid: {formatPricePrecise(existingStats.average)}
                   </p>
                 )}
                 {priceComparison && (

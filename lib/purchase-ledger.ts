@@ -20,6 +20,17 @@ export interface PurchaseInput {
 }
 
 /**
+ * Converts euros to integer cents. Weighted-average math is done in cents
+ * throughout recordPurchase() to avoid binary floating-point error landing
+ * exactly on a .5 rounding boundary (e.g. (45 + 77.85) / 6 is mathematically
+ * 20.475, but 122.85 / 6 in IEEE 754 doubles evaluates to
+ * 20.474999999999998, which rounds down instead of up).
+ */
+function toCents(euros: number): number {
+  return Math.round(euros * 100);
+}
+
+/**
  * All retailer names used across the purchase history, deduplicated
  * case-insensitively (first-seen casing of the most recent use wins),
  * most recently used first. Feeds the retailer suggestions in the
@@ -87,17 +98,21 @@ export function recordPurchase(
 
   if (existingIdx >= 0) {
     const wine = cellar[existingIdx];
-    const prevTotal = wine.purchasePrice * wine.quantity;
     const newQty = wine.quantity + input.quantity;
+    // Round exactly once, in integer-cents space, then convert back to euros.
+    // Rounding twice (once here, once again in euros) is what reintroduces
+    // the floating-point boundary error this function exists to avoid.
     const newAvgPrice =
       input.pricePerBottle > 0
-        ? (prevTotal + input.pricePerBottle * input.quantity) / newQty
+        ? Math.round(
+            (toCents(wine.purchasePrice) * wine.quantity + toCents(input.pricePerBottle) * input.quantity) / newQty
+          ) / 100
         : wine.purchasePrice;
 
     const updated: CellarWine = {
       ...wine,
       quantity: newQty,
-      purchasePrice: Math.round(newAvgPrice * 100) / 100,
+      purchasePrice: newAvgPrice,
       purchases: [...(wine.purchases ?? []), entry],
       provenance: { ...wine.provenance, purchasePrice: { source: 'purchase_history' } },
     };

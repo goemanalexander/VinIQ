@@ -64,6 +64,19 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/**
+ * Weighted average of priced entries, rounded exactly once in integer-cents
+ * space. Rounding in euros directly (Math.round(value/qty * 100) / 100) can
+ * land a mathematically exact .5-cent boundary just under it in IEEE 754
+ * (e.g. 122.85 / 6 evaluates to 20.474999999999998, not 20.475), rounding
+ * down instead of up. Matches the same fix in lib/purchase-ledger.ts.
+ */
+function weightedAverageCents(entries: { quantity: number; pricePerBottle: number }[]): number {
+  const qty = entries.reduce((s, e) => s + e.quantity, 0);
+  const cents = entries.reduce((s, e) => s + Math.round(e.pricePerBottle * 100) * e.quantity, 0);
+  return Math.round(cents / qty) / 100;
+}
+
 /** Lowest / highest / average price ever paid for one wine, from its ledger. */
 export interface PurchaseStats {
   lowest: number;
@@ -76,12 +89,10 @@ export interface PurchaseStats {
 export function getPurchaseStats(wine: CellarWine): PurchaseStats | null {
   const priced = (wine.purchases ?? []).filter((p) => p.pricePerBottle > 0);
   if (priced.length === 0) return null;
-  const qty = priced.reduce((s, p) => s + p.quantity, 0);
-  const value = priced.reduce((s, p) => s + p.quantity * p.pricePerBottle, 0);
   return {
     lowest: Math.min(...priced.map((p) => p.pricePerBottle)),
     highest: Math.max(...priced.map((p) => p.pricePerBottle)),
-    average: round2(value / qty),
+    average: weightedAverageCents(priced),
     timesPurchased: priced.length,
   };
 }
@@ -176,7 +187,9 @@ export function analysePurchase(
     emoji: priceIsBelow ? '🟢' : '🔴',
     totalBottles,
     currentPrice: round2(currentPrice),
-    averagePurchasePrice: round2(histAvg),
+    // Recomputed via the cents-safe helper for display — histAvg above is the
+    // raw ratio used only for the classification threshold, not shown as-is.
+    averagePurchasePrice: weightedAverageCents(history),
     priceDifference: round2(Math.abs(rawDiff)),
     priceIsBelow,
   };
