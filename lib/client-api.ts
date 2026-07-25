@@ -42,6 +42,47 @@ export async function callVisionApi(
   }
 }
 
+export interface BatchImagePayload {
+  imageBase64: string;
+  mediaType: MediaType;
+}
+
+export interface BatchImageResult {
+  index: number;
+  text?: string;
+  error?: string;
+}
+
+/**
+ * Calls the batch promotion route with 1–6 images. The server isolates
+ * failures per image; this call only errors as a whole on transport-level
+ * problems (timeout, network, bad request).
+ */
+export async function callBatchVisionApi(
+  images: BatchImagePayload[]
+): Promise<{ results: BatchImageResult[]; error?: string }> {
+  try {
+    const response = await fetch('/api/analyze-promotion-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { results: [], error: data.error ?? `Request failed (${response.status})` };
+    }
+    return { results: Array.isArray(data.results) ? data.results : [] };
+  } catch (err) {
+    if (err instanceof DOMException && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+      return { results: [], error: 'The analysis timed out. Please try again — fewer or smaller photos often help.' };
+    }
+    return { results: [], error: err instanceof Error ? err.message : 'Network error' };
+  }
+}
+
 /** Safely parse JSON from Claude's response (strips markdown fences) */
 export function parseJsonResponse<T>(text: string): T | null {
   try {

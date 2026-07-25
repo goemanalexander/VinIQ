@@ -63,9 +63,12 @@ export default function WineDetailPage({ params }: { params: { id: string } }) {
               <div>
                 <p className="font-display text-lg text-cream-100">{kc.general.producer}</p>
                 <p className="text-base text-gold-300">{kc.general.wineName}</p>
-                <p className="mt-0.5 text-sm text-cream-300/60">{kc.general.vintage} · {kc.general.region}</p>
+                <p className="mt-0.5 text-sm text-cream-300/60">
+                  {kc.scanMetadata?.vintageEstimated || kc.general.vintage <= 0 ? 'Vintage not listed' : kc.general.vintage}
+                  {' · '}{kc.general.region || 'Region not listed'}
+                </p>
                 {kc.general.price != null && (
-                  <p className="mt-1.5 font-display text-xl text-gold-300">{formatCurrency(kc.general.price)}</p>
+                  <p className="mt-1.5 font-display text-xl text-gold-300">{formatCurrency(kc.general.price)} / bottle</p>
                 )}
               </div>
               <MatchStars percent={kc.personalScore.matchPercent} size="md" />
@@ -86,10 +89,10 @@ export default function WineDetailPage({ params }: { params: { id: string } }) {
         <div className="mx-5 mb-5">
           <h3 className="mb-2 font-display text-sm uppercase tracking-wide text-gold-400/80">Quick Facts</h3>
           <Card>
-            <QuickFact label="Grapes" value={kc.general.grapes.join(', ')} />
-            <QuickFact label="Alcohol" value={`${kc.general.alcohol}%`} />
-            <QuickFact label="Drink window" value={`${dw.from}–${dw.to}`} />
-            <QuickFact label="Peak" value={`${dw.peakFrom}–${dw.peakTo}`} />
+            <QuickFact label="Grapes" value={kc.general.grapes.length > 0 ? kc.general.grapes.join(', ') : 'Not listed'} />
+            <QuickFact label="Alcohol" value={kc.general.alcohol > 0 ? `${kc.general.alcohol}%` : 'Not listed'} />
+            <QuickFact label="Drink window" value={`${dw.from}–${dw.to}${kc.scanMetadata?.vintageEstimated ? ' (est.)' : ''}`} />
+            <QuickFact label="Peak" value={`${dw.peakFrom}–${dw.peakTo}${kc.scanMetadata?.vintageEstimated ? ' (est.)' : ''}`} />
             <QuickFact label="Decanting" value={kc.decanting.shouldDecant ? `${kc.decanting.decantMinutes} min` : 'No decanting needed'} />
             <QuickFact label="Food" value={kc.foodPairing.dishes.slice(0, 3).join(', ')} />
           </Card>

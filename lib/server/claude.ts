@@ -12,7 +12,11 @@ export interface VisionCallResult {
 export async function callClaudeVisionServer(
   imageBase64: string,
   mediaType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
-  prompt: string
+  prompt: string,
+  // Single-wine scans fit comfortably in 2000 tokens. A dense promotion-folder
+  // page can hold 25+ offers; at 2000 the JSON truncates mid-object and the
+  // whole page fails to parse, so batch callers request a larger budget.
+  maxTokens = 2000
 ): Promise<VisionCallResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
@@ -33,7 +37,7 @@ export async function callClaudeVisionServer(
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: maxTokens,
         messages: [
           {
             role: 'user',

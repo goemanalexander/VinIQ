@@ -115,6 +115,16 @@ export function getWineListResult(): WineListResult | null {
   return read<WineListResult | null>(KEYS.lastWineList, null);
 }
 
+const PROMO_BATCH_KEY = 'viniq.lastPromoBatch';
+
+export function savePromoBatchResult(result: import('./promo-batch').BatchAnalysisResult) {
+  write(PROMO_BATCH_KEY, result);
+}
+
+export function getPromoBatchResult(): import('./promo-batch').BatchAnalysisResult | null {
+  return read<import('./promo-batch').BatchAnalysisResult | null>(PROMO_BATCH_KEY, null);
+}
+
 // ---------- Feedback ----------
 
 const FEEDBACK_KEY = 'viniq.feedback';

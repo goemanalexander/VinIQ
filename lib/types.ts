@@ -159,9 +159,15 @@ export interface WineListEntry {
   producer: string;
   wineName: string;
   vintage: number;
+  /** true when no vintage was printed on the list — the number is an internal
+   *  estimate for window maths only and must NOT be shown as a real year. */
+  vintageEstimated?: boolean;
   region: string;
   price: number;
   matchPercent: number;
+  /** true when the taste match was inferred from real grape/region data rather
+   *  than a colour fallback; false ⇒ do not present authoritative star ratings. */
+  matchReliable?: boolean;
   badges: Badge[];
   koopjeschecker: Koopjeschecker;
 }

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { AlertCircle, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import ImageUploader from '@/components/ImageUploader';
 import { callVisionApi, parseJsonResponse } from '@/lib/client-api';
@@ -69,6 +70,21 @@ export default function ScanPromotionPage() {
           analyseLabel="Check This Deal"
           onAnalyse={handleAnalyse}
         />
+
+        {/* Multi-page folder flow */}
+        <Link
+          href="/scan/promotion/batch"
+          className="mt-6 flex items-center gap-3 rounded-2xl border border-gold-500/20 bg-navy-800/40 px-4 py-3.5 transition-colors active:bg-gold-500/5"
+        >
+          <span className="text-xl">📚</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-cream-100">Whole promotion folder?</span>
+            <span className="block text-xs text-cream-300/55">
+              Scan up to 6 pages at once and get a ranked list of the best buys.
+            </span>
+          </span>
+          <ChevronRight size={16} className="shrink-0 text-gold-400/60" />
+        </Link>
       </div>
     </>
   );

@@ -15,7 +15,9 @@ import { percentToStars } from '@/lib/utils';
 
 const PICKS = [
   { key: 'alexanders_choice', emoji: '🦊', label: "Alexander's Choice", desc: 'Best match for your personal taste' },
-  { key: 'budget_choice',      emoji: '💰', label: 'Best Value',          desc: 'Best QPR at the lower end of the list' },
+  // "Best Value" implies a proven price-to-quality judgement; this pick is only
+  // the lowest-priced wine, so the copy stays honest about that.
+  { key: 'budget_choice',      emoji: '💰', label: 'Best lower-priced match', desc: 'Lowest-priced wine on the list' },
   { key: 'best_wine',          emoji: '🍷', label: 'Best Wine',           desc: 'Highest quality on the list' },
   { key: 'best_price_quality', emoji: '💎', label: 'Best Price/Quality',  desc: 'Strongest match per euro spent' },
 ] as const;
@@ -39,7 +41,7 @@ function PickCard({ entry, pick }: { entry: WineListEntry; pick: typeof PICKS[nu
               {entry.producer ? `${entry.producer} — ` : ''}{entry.wineName}
             </p>
             <p className="text-xs text-cream-300/60">
-              {entry.vintage > 0 ? `${entry.vintage} · ` : ''}{entry.region || ''}
+              {!entry.vintageEstimated && entry.vintage > 0 ? `${entry.vintage} · ` : ''}{entry.region || 'Region not listed'}
             </p>
             <div className="mt-2 flex items-center justify-between gap-3">
               <div className="flex items-center gap-1.5">
@@ -47,10 +49,15 @@ function PickCard({ entry, pick }: { entry: WineListEntry; pick: typeof PICKS[nu
                   <>
                     <Tag size={12} className="text-gold-400" />
                     <span className="font-display text-lg text-gold-300">{formatCurrency(entry.price)}</span>
+                    <span className="text-[11px] text-cream-300/40">/ bottle</span>
                   </>
                 )}
               </div>
-              <MatchStars percent={entry.matchPercent} size="sm" showLabel={false} />
+              {entry.matchReliable === false ? (
+                <span className="text-[10px] italic text-cream-300/40">Match uncertain</span>
+              ) : (
+                <MatchStars percent={entry.matchPercent} size="sm" showLabel={false} />
+              )}
             </div>
             <BadgeRow badges={entry.badges} className="mt-2" />
             <p className="mt-1 text-xs italic text-cream-300/40">{pick.desc} · Tap for full analysis</p>
@@ -164,17 +171,19 @@ export default function WineListResultPage() {
                     href={`/wine/${entry.id}?from=wine-list`}
                     className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-cream-100/[0.04]"
                   >
-                    <span className="text-sm text-gold-400">
-                      {'★'.repeat(stars)}{'☆'.repeat(5 - stars)}
+                    <span className="w-[52px] shrink-0 text-sm text-gold-400">
+                      {entry.matchReliable === false
+                        ? <span className="text-cream-300/30">— — —</span>
+                        : <>{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</>}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm text-cream-100">
                         {entry.producer ? `${entry.producer} — ` : ''}{entry.wineName}
-                        {entry.vintage > 0 ? ` ${entry.vintage}` : ''}
+                        {!entry.vintageEstimated && entry.vintage > 0 ? ` ${entry.vintage}` : ''}
                       </p>
                       <p className="text-xs text-cream-300/50">
-                        {entry.region || ''}
-                        {entry.price > 0 ? ` · ${formatCurrency(entry.price)}` : ''}
+                        {entry.region || 'Region not listed'}
+                        {entry.price > 0 ? ` · ${formatCurrency(entry.price)} / bottle` : ''}
                       </p>
                     </div>
                   </Link>

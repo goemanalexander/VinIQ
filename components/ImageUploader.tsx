@@ -3,67 +3,13 @@
 import { useRef, useState } from 'react';
 import { Camera, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import ScanLoadingOverlay from './ScanLoadingOverlay';
-
-type MediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
+import { prepareImage, dataUrlToBase64, type MediaType } from '@/lib/image-optimise';
 
 interface ImageUploaderProps {
   label: string;
   helperText?: string;
   analyseLabel?: string;
   onAnalyse: (imageBase64: string, mediaType: MediaType) => void | Promise<void>;
-}
-
-// Claude Vision reads labels reliably at ~1600px on the longest side; anything
-// larger only adds upload time. Payloads already below both limits are sent as-is.
-const MAX_DIMENSION = 1600;
-const MAX_BYTES = 1_500_000;
-const JPEG_QUALITY = 0.85;
-
-function detectMediaType(dataUrl: string): MediaType {
-  const header = dataUrl.slice(0, dataUrl.indexOf(','));
-  if (header.includes('image/png')) return 'image/png';
-  if (header.includes('image/webp')) return 'image/webp';
-  if (header.includes('image/gif')) return 'image/gif';
-  return 'image/jpeg';
-}
-
-function approxBytes(dataUrl: string): number {
-  return Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75);
-}
-
-/**
- * Downscales/re-encodes the image client-side when it is larger than the
- * vision model needs. Falls back to the original on any failure — a scan
- * must never be blocked by the optimisation step.
- */
-async function prepareImage(dataUrl: string): Promise<{ dataUrl: string; mediaType: MediaType }> {
-  const original = { dataUrl, mediaType: detectMediaType(dataUrl) };
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = reject;
-      el.src = dataUrl;
-    });
-
-    const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
-    const withinLimits = scale === 1 && original.mediaType === 'image/jpeg' && approxBytes(dataUrl) <= MAX_BYTES;
-    if (withinLimits) return original;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(img.width * scale);
-    canvas.height = Math.round(img.height * scale);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return original;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    const compressed = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-    // Re-encoding a small PNG can occasionally grow it — keep whichever is smaller
-    if (approxBytes(compressed) >= approxBytes(dataUrl)) return original;
-    return { dataUrl: compressed, mediaType: 'image/jpeg' };
-  } catch {
-    return original;
-  }
 }
 
 export default function ImageUploader({
@@ -95,9 +41,7 @@ export default function ImageUploader({
     setLoading(true);
     try {
       const prepared = await prepareImage(preview);
-      const comma = prepared.dataUrl.indexOf(',');
-      const base64 = comma >= 0 ? prepared.dataUrl.slice(comma + 1) : prepared.dataUrl;
-      await onAnalyse(base64, prepared.mediaType);
+      await onAnalyse(dataUrlToBase64(prepared.dataUrl), prepared.mediaType);
     } finally {
       // Always clear — the user must never be stranded on the loading screen
       setLoading(false);

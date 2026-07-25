@@ -95,3 +95,65 @@ Return ONLY valid JSON — no explanation, no markdown:
 }
 
 Look carefully for a crossed-out or smaller "was" price near the main price — that's the originalPrice. If you only see one price, set originalPrice to null. Never invent a discount that isn't shown.`;
+
+export const PROMOTION_BATCH_OCR_PROMPT = `You are analysing ONE page of a wine promotion folder or supermarket display. The page may contain MULTIPLE wine offers. Extract EVERY distinct wine offer you can see.
+
+For each offer, extract only what is clearly printed:
+- wineName: the wine name or appellation (or null if not legible)
+- producer: the winery/producer name (or null)
+- vintage: the year as a number (or null — never guess)
+- country: country of origin (or null)
+- region: region or appellation (or null)
+- color: "red", "white", "rosé" or "sparkling" (or null if unclear)
+- grapes: array of grape varieties if printed — empty array if not shown
+- classification: quality classification like "Riserva", "DOC" (or null)
+- ratingOrMedal: a rating score or medal ONLY if clearly printed, e.g. "Gold medal", "92 pts" (or null)
+- unitPrice: the current price for ONE bottle as a number (or null)
+- originalPrice: a crossed-out/"was" price for one bottle (or null)
+- packagePrice: a price that clearly applies to a MULTI-BOTTLE package or case (or null)
+- packageBottleCount: how many bottles that package price covers (or null)
+- paidBottleCount: for "X+Y free" style offers, the number of bottles paid for (or null)
+- freeBottleCount: for "X+Y free" style offers, the number of free bottles (or null)
+- identificationConfidence: "high" | "medium" | "low" — how sure you are which wine this is
+- priceConfidence: "high" | "medium" | "low" — how sure you are what the price structure is
+- warnings: array of short notes about anything ambiguous (e.g. "price may apply per case", "mixed package, wines not individually priced")
+
+Critical price rules:
+- NEVER put a package/case price in unitPrice. If a price says "per 6 bottles", it is packagePrice with packageBottleCount 6.
+- For "4+2 gratis" style offers: paidBottleCount 4, freeBottleCount 2, unitPrice = the per-bottle price if shown.
+- If it is unclear whether a price is per bottle or per package, set priceConfidence to "low" and add a warning.
+- For mixed packages (different wines sold together for one price), report the package as ONE offer with the package name, packagePrice, packageBottleCount, identificationConfidence "low", and a warning.
+- Never invent vintages, regions, grapes, ratings or prices that are not printed.
+
+Also extract:
+- retailer: the shop/chain name if visible anywhere on the page (or null)
+
+Return ONLY valid JSON — no explanation, no markdown:
+{
+  "ocrText": "all text you can read on the page verbatim, including all prices",
+  "retailer": "string or null",
+  "offers": [
+    {
+      "wineName": "string or null",
+      "producer": "string or null",
+      "vintage": 2021,
+      "country": "string or null",
+      "region": "string or null",
+      "color": "red",
+      "grapes": [],
+      "classification": "string or null",
+      "ratingOrMedal": "string or null",
+      "unitPrice": 8.99,
+      "originalPrice": 11.99,
+      "packagePrice": null,
+      "packageBottleCount": null,
+      "paidBottleCount": null,
+      "freeBottleCount": null,
+      "identificationConfidence": "high",
+      "priceConfidence": "high",
+      "warnings": []
+    }
+  ]
+}
+
+If the page is unreadable or contains no wine offers, return {"ocrText": "...", "retailer": null, "offers": []}.`;

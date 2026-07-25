@@ -601,7 +601,16 @@ function getRecommendedAction(matchScore: number): 'BUY' | 'CONSIDER' | 'SKIP' {
 }
 
 export function buildWineListEntry(wine: DetectedWine, ideal: Structure = COLD_START_IDEAL): WineListEntry {
+  // No vintage on the list is common (restaurant lists rarely print them).
+  // Keep an internal estimate purely for the drinking-window maths, but flag it
+  // so the UI never presents an invented year as real.
+  const vintageEstimated = wine.vintage === null;
   const vintage = wine.vintage ?? (new Date().getFullYear() - 3);
+  // The taste match is only trustworthy when we had real grape or region data to
+  // infer structure from. Name-only lines fall back to a colour default, which
+  // gives every red the same score — not a differentiated, authoritative rating.
+  const matchReliable = wine.grapes.length > 0 || !!wine.region;
+
   const structure = inferStructure(wine);
   const { score: matchScore, positiveTags, negativeTags } = calculateAlexanderMatch(wine, structure, ideal, wine.vintage);
   const styleKey = pickStyleKey(wine);
@@ -616,15 +625,24 @@ export function buildWineListEntry(wine: DetectedWine, ideal: Structure = COLD_S
     reasoning: generateReasoning(wine, structure, matchScore, positiveTags, negativeTags),
   };
   kc.recommendedAction = action;
+  // Carry the vintage-estimated flag onto the KC so the shared wine detail page
+  // shows "Vintage not listed" instead of the internal placeholder year.
+  kc.scanMetadata = {
+    ocrText: '',
+    confidence: matchReliable ? 'medium' : 'low',
+    vintageEstimated,
+  };
 
   return {
     id: genId('entry'),
     producer: wine.producer ?? '',
     wineName: wine.wineName,
     vintage,
+    vintageEstimated,
     region: wine.region ?? kc.general.region,
     price: wine.price ?? kc.general.price ?? 0,
     matchPercent: matchScore,
+    matchReliable,
     badges,
     koopjeschecker: kc,
   };

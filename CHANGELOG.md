@@ -2,6 +2,19 @@
 
 All notable changes to VinIQ are documented in this file.
 
+## v0.5.0 — Multi-Image Promotion Advisor
+
+### New
+- Scan a whole promotion folder: upload up to 6 pages in one go
+- One ranked shortlist of the best buys, powered by the existing Buying Advisor
+- Package-deal understanding (4+2 free, case prices) with an explicit effective price per bottle
+- Conservative cross-page duplicate detection
+- Uncertain offers land in "Needs review" with manual correction instead of a forced verdict
+- One unreadable page no longer discards the rest of the batch
+
+### Improved
+- Image optimisation extracted into a shared helper used by both scan flows
+
 ## v0.4.2 — Purchase Flow Polish
 
 ### Improved
