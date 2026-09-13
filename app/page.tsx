@@ -2,164 +2,159 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Wine, AlertCircle, AlertTriangle, Clock, Camera, Archive } from 'lucide-react';
+import { Wine, Grid3X3, Plus } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
-import Logo from '@/components/Logo';
-import SommelierCard from '@/components/SommelierCard';
-import { getCellar } from '@/lib/storage';
-import { getActionItems, getCellarSummary } from '@/lib/sommelier';
-import type { ActionItem } from '@/lib/types';
+import { getCellarSummary, getAllWinesWithCount } from '@/lib/storage';
+import { formatCurrency, DRINK_WINDOW_COLOR, DRINK_WINDOW_LABEL } from '@/lib/utils';
+import type { CellarSummary, WineWithCount } from '@/lib/types';
+import { APP_VERSION } from '@/lib/version';
 
-const QUICK_ACTIONS = [
-  {
-    href: '/scan/wine-list',
-    icon: Camera,
-    title: 'Scan Wine List',
-    description: "Alexander's Choice & Best Value",
-  },
-  {
-    href: '/scan/promotion',
-    icon: Camera,
-    title: 'Scan Promotion',
-    description: 'Is this discount worth it?',
-  },
-  {
-    href: '/scan/bottle',
-    icon: Camera,
-    title: 'Scan Bottle',
-    description: 'Full Koopjeschecker',
-  },
-  {
-    href: '/cellar',
-    icon: Archive,
-    title: 'My Cellar',
-    description: 'What to drink tonight',
-  },
-];
-
-interface CellarSummaryData {
-  bottles: number;
-  uniqueWines: number;
-  averageRating: number;
-  readyToDrink: number;
-}
-
-export default function HomePage() {
-  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
-  const [summary, setSummary] = useState<CellarSummaryData | null>(null);
+export default function DashboardPage() {
+  const [summary, setSummary] = useState<CellarSummary | null>(null);
+  const [wines, setWines] = useState<WineWithCount[]>([]);
 
   useEffect(() => {
-    const cellar = getCellar();
-    setActionItems(getActionItems(cellar));
-    setSummary(getCellarSummary(cellar));
+    getCellarSummary().then(setSummary);
+    getAllWinesWithCount().then(setWines);
   }, []);
 
+  const activeWines = wines.filter(w => w.bottleCount > 0);
+
   return (
-    <div className="px-5 pt-6 pb-8">
+    <>
+      <PageHeader />
+      <div className="px-5 pt-4 pb-8">
 
-      {/* Slim header */}
-      <header className="mb-6 flex items-center gap-3">
-        <Logo size={36} />
-        <div>
-          <h1 className="font-display text-2xl font-semibold leading-none text-cream-100">VinIQ</h1>
-          <p className="text-[11px] text-cream-300/50">Private Wine Advisor</p>
-        </div>
-      </header>
+        {/* Summary cards */}
+        {summary && (
+          <section className="mb-6">
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <Card className="text-center py-4">
+                <p className="font-display text-3xl text-cream-100">{summary.totalBottles}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wide text-cream-300/50">Flessen</p>
+              </Card>
+              <Card className="text-center py-4">
+                <p className="font-display text-3xl text-cream-100">{summary.uniqueWines}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wide text-cream-300/50">Wijnen</p>
+              </Card>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <Card className="text-center py-4">
+                <p className="font-display text-2xl text-gold-300">{formatCurrency(summary.purchaseValue)}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wide text-cream-300/50">Aankoopwaarde</p>
+              </Card>
+              <Card className="text-center py-4">
+                <p className="font-display text-2xl text-gold-300">{formatCurrency(summary.marketValue)}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wide text-cream-300/50">Marktwaarde</p>
+                {summary.valueDifference !== 0 && (
+                  <p className={`mt-1 text-xs ${summary.valueDifference > 0 ? 'text-green-400' : 'text-burgundy-400'}`}>
+                    {summary.valueDifference > 0 ? '+' : ''}{formatCurrency(summary.valueDifference)}
+                  </p>
+                )}
+              </Card>
+            </div>
+            {/* Rack occupancy */}
+            <Card className="flex items-center justify-between py-3">
+              <div className="flex items-center gap-2 text-sm text-cream-300/60">
+                <Grid3X3 size={14} className="text-gold-400/70" />
+                <span>Rekbezetting</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-24 rounded-full bg-navy-700">
+                  <div
+                    className="h-full rounded-full bg-gold-500"
+                    style={{ width: `${Math.min(100, (summary.bottlesInRack / summary.rackCapacity) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-sm text-cream-200">
+                  {summary.bottlesInRack}/{summary.rackCapacity}
+                </span>
+              </div>
+            </Card>
+          </section>
+        )}
 
-      {/* Personal Sommelier card — hero */}
-      <section className="mb-6">
-        <SommelierCard />
-      </section>
-
-      {/* Action Required */}
-      {actionItems.length > 0 && (
+        {/* Quick actions */}
         <section className="mb-6">
-          <div className="mb-2.5 flex items-center gap-2">
-            <AlertCircle size={15} className="text-gold-400" />
-            <h2 className="font-display text-sm font-medium uppercase tracking-wide text-gold-400/80">
-              Action Required
-            </h2>
-          </div>
-          <Card edge className="divide-y divide-gold-500/10 p-0">
-            {actionItems.map((item, idx) => (
-              <Link
-                key={idx}
-                href={item.wineId ? `/cellar/${item.wineId}` : '/cellar'}
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-cream-100/[0.03]"
-              >
-                <span className="text-gold-400">
-                  {item.type === 'past_peak' ? (
-                    <AlertTriangle size={15} />
-                  ) : item.type === 'peak' ? (
-                    <Clock size={15} />
-                  ) : (
-                    <Wine size={15} />
-                  )}
-                </span>
-                <span className="text-sm text-cream-200">{item.message}</span>
-              </Link>
-            ))}
-          </Card>
-        </section>
-      )}
-
-      {/* Cellar Summary */}
-      {summary && summary.bottles > 0 && (
-        <section className="mb-6">
-          <div className="mb-2.5 flex items-center gap-2">
-            <Wine size={15} className="text-gold-400" />
-            <h2 className="font-display text-sm font-medium uppercase tracking-wide text-gold-400/80">
-              Cellar
-            </h2>
-          </div>
-          <Card className="grid grid-cols-3 gap-2 text-center py-3">
-            <div>
-              <p className="font-display text-xl text-cream-100">{summary.bottles}</p>
-              <p className="mt-0.5 text-[10px] uppercase tracking-wide text-cream-300/50">Bottles</p>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Stub: toevoegen is Phase 2 */}
+            <div title="Beschikbaar in fase 2" className="cursor-not-allowed">
+              <Card className="flex flex-col gap-2 p-3.5 opacity-40">
+                <Plus size={18} strokeWidth={1.6} className="text-cream-300/50" />
+                <span className="font-display text-sm text-cream-200">Fles toevoegen</span>
+                <span className="text-[10px] text-cream-300/50 uppercase tracking-wide">Binnenkort</span>
+              </Card>
             </div>
-            <div>
-              <p className="font-display text-xl text-gold-300">
-                {summary.averageRating > 0 ? summary.averageRating.toFixed(1) : '—'}
-              </p>
-              <p className="mt-0.5 text-[10px] uppercase tracking-wide text-cream-300/50">Avg. Rating</p>
-            </div>
-            <div>
-              <p className="font-display text-xl text-gold-300">{summary.readyToDrink}</p>
-              <p className="mt-0.5 text-[10px] uppercase tracking-wide text-cream-300/50">Ready Now</p>
-            </div>
-          </Card>
-        </section>
-      )}
-
-      {/* Quick actions — secondary */}
-      <section className="mb-6">
-        <div className="mb-2.5">
-          <h2 className="font-display text-sm font-medium uppercase tracking-wide text-cream-300/40">
-            Scanners
-          </h2>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          {QUICK_ACTIONS.map((action) => (
-            <Link key={action.href} href={action.href}>
-              <Card className="flex h-full flex-col gap-1.5 p-3.5 transition-transform active:scale-[0.98]">
-                <action.icon size={18} strokeWidth={1.6} className="text-gold-400/70" />
-                <span className="font-display text-sm leading-snug text-cream-100">
-                  {action.title}
-                </span>
-                <span className="text-[11px] leading-snug text-cream-300/50">
-                  {action.description}
-                </span>
+            <Link href="/kelder/rek">
+              <Card className="flex flex-col gap-2 p-3.5 transition-transform active:scale-[0.98]">
+                <Grid3X3 size={18} strokeWidth={1.6} className="text-gold-400/70" />
+                <span className="font-display text-sm text-cream-100">Bekijk rek</span>
               </Card>
             </Link>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Footer */}
-      <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-cream-300/30">
-        <Clock size={11} />
-        Everything is stored privately on this device.
-      </p>
-    </div>
+        {/* Wine list */}
+        {activeWines.length > 0 && (
+          <section className="mb-6">
+            <div className="mb-2.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wine size={14} className="text-gold-400" />
+                <h2 className="font-display text-sm font-medium uppercase tracking-wide text-gold-400/80">
+                  Mijn Kelder
+                </h2>
+              </div>
+              <Link href="/kelder" className="text-xs text-cream-300/40 hover:text-cream-200">
+                Alles bekijken →
+              </Link>
+            </div>
+            <Card className="divide-y divide-gold-500/10 p-1">
+              {activeWines.slice(0, 6).map((wine) => (
+                <Link
+                  key={wine.id}
+                  href={`/kelder/wijn/${wine.id}`}
+                  className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-cream-100/[0.03]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-cream-100">
+                      {wine.producer} — {wine.wineName}
+                    </p>
+                    <p className="text-xs text-cream-300/50">
+                      {wine.vintage ?? 'N.V.'} · {wine.region}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                    <span className="font-display text-base text-cream-100">×{wine.bottleCount}</span>
+                    <span className={`text-[10px] ${DRINK_WINDOW_COLOR[wine.drinkWindowStatus]}`}>
+                      {wine.drinkWindowStatus !== 'unknown'
+                        ? DRINK_WINDOW_LABEL[wine.drinkWindowStatus].split(' — ')[0]
+                        : ''}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </Card>
+          </section>
+        )}
+
+        {/* Empty state */}
+        {activeWines.length === 0 && (
+          <Card className="py-10 text-center">
+            <p className="font-display text-3xl">🍾</p>
+            <p className="mt-3 font-display text-base text-cream-100">Kelder is leeg</p>
+            <p className="mt-1 text-sm text-cream-300/60">Voeg je eerste fles toe om te beginnen.</p>
+            <Link
+              href="/kelder/toevoegen"
+              className="mt-4 inline-block rounded-full bg-gold-500 px-6 py-2.5 text-sm font-semibold text-navy-950"
+            >
+              Fles toevoegen
+            </Link>
+          </Card>
+        )}
+
+        <p className="text-center text-[10px] text-cream-300/20 mt-4">{APP_VERSION}</p>
+      </div>
+    </>
   );
 }

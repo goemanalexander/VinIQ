@@ -4,8 +4,8 @@ import BottomNav from '@/components/BottomNav';
 import ClientInit from '@/components/ClientInit';
 
 export const metadata: Metadata = {
-  title: 'VinIQ — Your personal wine advisor',
-  description: 'A personal AI sommelier: scan, score and decide in seconds.',
+  title: 'VinIQ — Wijnkelderbeheer',
+  description: 'Persoonlijk wijnkelderbeheer voor Alexander.',
   icons: {
     icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
     shortcut: ['/favicon.ico'],
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="nl">
       <body className="font-body antialiased">
         <ClientInit />
         <div className="mx-auto min-h-screen max-w-md pb-24">{children}</div>

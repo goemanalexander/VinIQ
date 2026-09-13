@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Wine, Camera, Archive, UserRound } from 'lucide-react';
+import { LayoutDashboard, Wine, Grid3X3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
-  { href: '/sommelier', icon: Wine, label: 'Sommelier' },
-  { href: '/scan', icon: Camera, label: 'Scan' },
-  { href: '/cellar', icon: Archive, label: 'Cellar' },
-  { href: '/profile', icon: UserRound, label: 'Profile' },
+  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/kelder', icon: Wine, label: 'Mijn Kelder' },
+  { href: '/kelder/rek', icon: Grid3X3, label: 'Rek' },
 ] as const;
 
 export default function BottomNav() {
@@ -19,11 +18,14 @@ export default function BottomNav() {
     <nav
       className="fixed bottom-0 left-0 right-0 z-40 border-t border-gold-500/15 bg-navy-950/90 backdrop-blur-lg"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      aria-label="Primary"
+      aria-label="Navigatie"
     >
-      <div className="mx-auto flex max-w-md items-stretch justify-between px-2">
+      <div className="mx-auto flex max-w-md items-stretch justify-around px-2">
         {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const active =
+            item.href === '/'
+              ? pathname === '/'
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
             <Link
@@ -39,7 +41,9 @@ export default function BottomNav() {
                 strokeWidth={active ? 2.1 : 1.7}
                 className={cn('transition-transform', active && 'scale-110')}
               />
-              <span className={cn('font-medium tracking-wide', active && 'font-semibold')}>{item.label}</span>
+              <span className={cn('font-medium tracking-wide', active && 'font-semibold')}>
+                {item.label}
+              </span>
               {active && <span className="mt-0.5 h-0.5 w-6 rounded-full bg-gold-500" />}
             </Link>
           );

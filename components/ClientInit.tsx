@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect } from 'react';
-import { ensureSeeded } from '@/lib/storage';
 
+/**
+ * Phase 1: no-op initialiser.
+ * Phase 2: will initialise Supabase connection and check session.
+ */
 export default function ClientInit() {
   useEffect(() => {
-    ensureSeeded();
+    // Phase 2: Supabase init goes here
   }, []);
 
   return null;

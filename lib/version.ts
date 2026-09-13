@@ -1,6 +1,3 @@
-// Single source of truth for the app version shown in the UI.
-// Bump on every release alongside CHANGELOG.md.
-
-export const APP_VERSION = 'v0.5.0';
-export const APP_RELEASE_NAME = 'Multi-Image Promotion Advisor';
-export const APP_COMMIT = '425f072';
+export const APP_VERSION = '1.0.0-alpha.1';
+export const APP_NAME = 'VinIQ';
+export const APP_TAGLINE = 'Persoonlijk wijnkelderbeheer';
