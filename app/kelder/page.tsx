@@ -46,19 +46,8 @@ export default function KelderPage() {
           />
         </div>
 
-        {/* Add button — stub until Phase 2 */}
         <div className="mb-5">
-          <button
-            disabled
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-navy-700 py-2.5 text-sm font-semibold text-cream-300/30 cursor-not-allowed"
-            title="Beschikbaar in fase 2"
-          >
-            <Plus size={15} />
-            Fles toevoegen
-            <span className="rounded-full border border-cream-300/20 px-2 py-0.5 text-[10px] font-normal">
-              Binnenkort
-            </span>
-          </button>
+          <p className="text-xs text-cream-300/60">Kies hieronder een wijn om flessen toe te voegen, op te drinken of te verplaatsen.</p>
         </div>
 
         {/* Wine list */}
