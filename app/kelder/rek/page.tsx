@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
-import { getRackGrid, getBottles } from '@/lib/storage';
-import type { RackGrid, RackRow, RackCol, Bottle } from '@/lib/types';
+import { getRackGrid, getBottles, getWines } from '@/lib/storage';
+import type { RackGrid, RackRow, RackCol, Bottle, Wine } from '@/lib/types';
 
 const ROWS: RackRow[] = ['A', 'B', 'C', 'D'];
 const COLS: RackCol[] = [1, 2, 3, 4, 5, 6];
@@ -22,9 +22,11 @@ const COLOR_MAP: Record<string, string> = {
 export default function RekPage() {
   const [grid, setGrid] = useState<RackGrid | null>(null);
   const [outsideBottles, setOutsideBottles] = useState<Bottle[]>([]);
+  const [wines, setWines] = useState<Wine[]>([]);
 
   useEffect(() => {
     getRackGrid().then(setGrid);
+    getWines().then(setWines);
     getBottles().then(all => setOutsideBottles(all.filter(b => b.location.type === 'outside')));
   }, []);
 
@@ -121,13 +123,18 @@ export default function RekPage() {
               Buiten rek ({outsideBottles.length} fl.)
             </h2>
             <Card className="divide-y divide-gold-500/10 p-1">
-              {outsideBottles.map(b => {
-                const label = b.location.type === 'outside' ? b.location.label : '';
+              {Array.from(new Set(outsideBottles.map(b => b.wineId))).map(wineId => {
+                const group = outsideBottles.filter(b => b.wineId === wineId);
+                const wine = wines.find(w => w.id === wineId);
+                const labels = Array.from(new Set(group.map(b => b.location.type === 'outside' ? b.location.label : undefined).filter(Boolean)));
                 return (
-                  <div key={b.id} className="flex items-center justify-between px-3 py-2.5">
-                    <span className="text-sm text-cream-200">{label ? `Buiten rek — ${label}` : 'Buiten rek'}</span>
-                    <Link href={`/kelder/wijn/${b.wineId}`} className="text-xs text-gold-400">Bekijken →</Link>
-                  </div>
+                  <Link key={wineId} href={`/kelder/wijn/${wineId}`} className="flex items-center justify-between gap-3 px-3 py-3">
+                    <span className="min-w-0 text-sm text-cream-200">
+                      {wine ? `${wine.producer ? wine.producer + ' — ' : ''}${wine.wineName} ${wine.vintage ?? ''}` : 'Onbekende wijn'}
+                      {labels.length > 0 && <span className="block text-xs text-cream-300/50">{labels.join(', ')}</span>}
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold text-gold-300">×{group.length}</span>
+                  </Link>
                 );
               })}
             </Card>

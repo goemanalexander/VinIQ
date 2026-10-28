@@ -270,3 +270,49 @@ export async function getKnownRetailers(): Promise<string[]> {
     .sort((a, b) => b.lastUsed.localeCompare(a.lastUsed))
     .map(v => v.name);
 }
+
+/** Safe inventory mutations. Bottle stock and event history are updated together. */
+export async function addBottleToCellar(wineId: string, location: Bottle['location'], pricePerBottle: number, gift: boolean): Promise<void> {
+  ensureLoaded();
+  if (!_wines.some(w => w.id === wineId)) throw new Error('Wijn niet gevonden');
+  if (!Number.isFinite(pricePerBottle) || pricePerBottle < 0) throw new Error('Ongeldige prijs');
+  assertFreeLocation(location);
+  const now = new Date().toISOString();
+  const acquisitionId = genId('acq');
+  const bottleId = genId('bottle');
+  _acquisitions = [..._acquisitions, { id: acquisitionId, wineId, type: gift ? 'gift' : 'purchased', quantity: 1, pricePerBottle: gift ? 0 : pricePerBottle, date: now.slice(0,10), createdAt: now }];
+  _bottles = [..._bottles, { id: bottleId, wineId, acquisitionId, location, addedAt: now }];
+  _events = [..._events, { id: genId('evt'), wineId, bottleId, type: gift ? 'received_gift' : 'purchased', toLocation: location, timestamp: now }];
+  const paid = _acquisitions.filter(a => a.wineId === wineId && a.type === 'purchased');
+  const total = paid.reduce((s,a) => s + a.quantity,0);
+  const avg = total ? paid.reduce((s,a) => s + a.quantity*a.pricePerBottle,0)/total : 0;
+  _wines = _wines.map(w => w.id === wineId ? { ...w, avgPurchasePrice: avg } : w);
+  save();
+}
+
+function assertFreeLocation(location: Bottle['location'], excludeBottleId?: string) {
+  if (location.type !== 'rack') return;
+  if (!['A','B','C','D'].includes(location.row) || ![1,2,3,4,5,6].includes(location.col)) throw new Error('Ongeldige rekpositie');
+  if (_bottles.some(b => b.id !== excludeBottleId && b.location.type === 'rack' && b.location.row === location.row && b.location.col === location.col)) {
+    throw new Error('Deze rekpositie is al bezet');
+  }
+}
+
+export async function moveCellarBottle(bottleId: string, location: Bottle['location']): Promise<void> {
+  ensureLoaded();
+  const bottle = _bottles.find(b => b.id === bottleId);
+  if (!bottle) throw new Error('Fles niet gevonden');
+  assertFreeLocation(location, bottleId);
+  _bottles = _bottles.map(b => b.id === bottleId ? { ...b, location } : b);
+  _events = [..._events, { id: genId('evt'), wineId: bottle.wineId, bottleId, type: 'moved', fromLocation: bottle.location, toLocation: location, timestamp: new Date().toISOString() }];
+  save();
+}
+
+export async function removeCellarBottle(bottleId: string, reason: 'drank' | 'gifted_away'): Promise<void> {
+  ensureLoaded();
+  const bottle = _bottles.find(b => b.id === bottleId);
+  if (!bottle) throw new Error('Fles niet gevonden');
+  _bottles = _bottles.filter(b => b.id !== bottleId);
+  _events = [..._events, { id: genId('evt'), wineId: bottle.wineId, bottleId, type: reason, fromLocation: bottle.location, timestamp: new Date().toISOString() }];
+  save();
+}

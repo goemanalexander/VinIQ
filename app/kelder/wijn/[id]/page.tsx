@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
-import { getWineWithCount, getBottles, getAcquisitions } from '@/lib/storage';
+import { getWineWithCount, getBottles, getAcquisitions, addBottleToCellar, moveCellarBottle, removeCellarBottle, getRackGrid } from '@/lib/storage';
 import {
   formatCurrency, formatCurrencyExact, formatLocation,
   DRINK_WINDOW_LABEL, DRINK_WINDOW_COLOR
@@ -22,14 +22,38 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
   const [bottles, setBottles] = useState<Bottle[]>([]);
   const [acquisitions, setAcquisitions] = useState<Acquisition[]>([]);
 
-  useEffect(() => {
-    getWineWithCount(params.id).then(w => {
-      if (!w) { router.replace('/kelder'); return; }
-      setWine(w);
-    });
-    getBottles(params.id).then(setBottles);
-    getAcquisitions(params.id).then(setAcquisitions);
-  }, [params.id, router]);
+
+  const [selectedBottle, setSelectedBottle] = useState('');
+  const [position, setPosition] = useState('outside');
+  const [price, setPrice] = useState('');
+  const [gift, setGift] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [freePositions, setFreePositions] = useState<string[]>([]);
+  async function refresh() {
+    const [w, b, a, grid] = await Promise.all([getWineWithCount(params.id), getBottles(params.id), getAcquisitions(params.id), getRackGrid()]);
+    setWine(w); setBottles(b); setAcquisitions(a);
+    setSelectedBottle(previous => b.some(x => x.id === previous) ? previous : (b[0]?.id ?? ''));
+    setFreePositions(['A','B','C','D'].flatMap(row => [1,2,3,4,5,6].filter(col => !grid[row as 'A'|'B'|'C'|'D']?.[col as 1|2|3|4|5|6]).map(col => row+col)));
+  }
+  function location(value: string) {
+    return value === 'outside' ? { type: 'outside' as const } : { type: 'rack' as const, row: value[0] as 'A'|'B'|'C'|'D', col: Number(value.slice(1)) as 1|2|3|4|5|6 };
+  }
+  async function action(kind: 'add'|'move'|'drank'|'gifted_away') {
+    if (busy) return;
+    if (kind !== 'add' && !selectedBottle) return;
+    if (kind !== 'add' && !window.confirm(kind === 'move' ? 'Deze fles verplaatsen?' : 'Deze fles uit de voorraad halen?')) return;
+    setBusy(true); setError('');
+    try {
+      if (kind === 'add') await addBottleToCellar(params.id, location(position), Number(price || 0), gift);
+      else if (kind === 'move') await moveCellarBottle(selectedBottle, location(position));
+      else await removeCellarBottle(selectedBottle, kind);
+      await refresh();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Er ging iets mis'); }
+    finally { setBusy(false); }
+  }
+
+  useEffect(() => { refresh().catch(e => setError(String(e))); }, [params.id]);
 
   if (!wine) return null;
 
@@ -129,41 +153,31 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
           </Card>
         )}
 
-        {/* Actions — stubs: disabled until Phase 2 */}
-        <Card className="space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-cream-300/30 mb-3">
-            Acties — beschikbaar in fase 2
-          </p>
-          <button
-            disabled
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-navy-700 py-3 text-sm font-semibold text-cream-300/30 cursor-not-allowed"
-            title="Beschikbaar in fase 2"
-          >
-            🍷 Opdrinken
-            <span className="rounded-full border border-cream-300/20 px-2 py-0.5 text-[10px] font-normal tracking-wide">
-              Binnenkort
-            </span>
-          </button>
-          <button
-            disabled
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-gold-500/10 py-3 text-sm font-semibold text-cream-300/30 cursor-not-allowed"
-            title="Beschikbaar in fase 2"
-          >
-            Verplaatsen
-            <span className="rounded-full border border-cream-300/20 px-2 py-0.5 text-[10px] font-normal tracking-wide">
-              Binnenkort
-            </span>
-          </button>
-          <button
-            disabled
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-gold-500/10 py-2.5 text-sm text-cream-300/30 cursor-not-allowed"
-            title="Beschikbaar in fase 2"
-          >
-            Bewerken
-            <span className="rounded-full border border-cream-300/20 px-2 py-0.5 text-[10px] font-normal tracking-wide">
-              Binnenkort
-            </span>
-          </button>
+
+        <Card className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-cream-300/60">Voorraad beheren</p>
+          <label className="block text-xs text-cream-300/60">Fles kiezen</label>
+          <select value={selectedBottle} onChange={e => setSelectedBottle(e.target.value)} className="w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100">
+            {bottles.map(b => <option key={b.id} value={b.id}>{formatLocation(b.location)} · {b.id.slice(-5)}</option>)}
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <button disabled={busy || !selectedBottle} onClick={() => action('drank')} className="rounded-lg bg-burgundy-700 p-3 text-sm text-white disabled:opacity-40">🍷 Opgedronken</button>
+            <button disabled={busy || !selectedBottle} onClick={() => action('gifted_away')} className="rounded-lg border border-gold-500/30 p-3 text-sm text-cream-100 disabled:opacity-40">🎁 Weggegeven</button>
+          </div>
+          <label className="block text-xs text-cream-300/60">Nieuwe positie (verplaatsen of toevoegen)</label>
+          <select value={position} onChange={e => setPosition(e.target.value)} className="w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100">
+            <option value="outside">Buiten rek</option>
+            {freePositions.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <button disabled={busy || !selectedBottle} onClick={() => action('move')} className="w-full rounded-lg border border-gold-500/30 p-3 text-sm text-cream-100 disabled:opacity-40">Fles verplaatsen</button>
+          <div className="border-t border-gold-500/20 pt-3">
+            <p className="mb-2 text-sm text-cream-100">Extra fles van deze wijn toevoegen</p>
+            <label className="flex items-center gap-2 text-sm text-cream-200"><input type="checkbox" checked={gift} onChange={e => setGift(e.target.checked)} /> Geschenk</label>
+            {!gift && <input type="number" min="0" step="0.01" placeholder="Aankoopprijs per fles (€)" value={price} onChange={e => setPrice(e.target.value)} className="mt-2 w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100" />}
+            <button disabled={busy || (!gift && (!price || Number(price) < 0))} onClick={() => action('add')} className="mt-2 w-full rounded-lg bg-gold-600 p-3 text-sm font-semibold text-navy-950 disabled:opacity-40">+ Fles toevoegen</button>
+          </div>
+          {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+          <p className="text-xs text-cream-300/40">Wijzigingen worden voorlopig alleen op dit toestel opgeslagen.</p>
         </Card>
       </div>
     </>
