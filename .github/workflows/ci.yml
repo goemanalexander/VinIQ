@@ -28,3 +28,9 @@ jobs:
         run: npm run lint
       - name: Production build
         run: npm run build
+      - name: Install browser test runner
+        run: npm install --no-save --package-lock=false @playwright/test
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser smoke tests
+        run: npx playwright test
