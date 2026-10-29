@@ -32,7 +32,7 @@ test('new purchased wine is added with decimal price and survives reload', async
   await expect(price).toHaveAttribute('inputmode', 'decimal');
   await price.fill('12,95');
   await page.getByRole('button', { name: 'Wijn en flessen toevoegen' }).click();
-  await expect(page).toHaveURL(/\/kelder\/wijn\/wine_/);
+  await expect(page).toHaveURL(/\/kelder\/wijn\/wine-/);
   await expect(page.getByText('×2').first()).toBeVisible();
   await expect(page.getByText('12,95', { exact: false }).first()).toBeVisible();
   await page.reload();
