@@ -139,3 +139,14 @@ test('personal drinking recommendation is separate from general window and respe
   await page.reload();
   await expect(page.getByText('Voor jouw smaak: 2031')).toBeVisible();
 });
+
+test('bottle picker shows readable locations without internal IDs', async ({ page }) => {
+  await page.goto('/kelder/wijn/seed-wine-bennati');
+  const picker = page.getByLabel('Fles kiezen');
+  await expect(picker).toBeVisible();
+  const options = await picker.locator('option').allTextContents();
+  expect(options.length).toBeGreaterThan(1);
+  expect(options.some(s => s.startsWith('Rek '))).toBeTruthy();
+  expect(options.some(s => /Buiten rek · fles [12]/.test(s))).toBeTruthy();
+  expect(options.every(s => !/ · [a-z0-9-]{5}$/.test(s))).toBeTruthy();
+});
