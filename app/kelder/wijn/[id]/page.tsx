@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
+import WineLabelPhoto from '@/components/WineLabelPhoto';
 import { getWineWithCount, getBottles, getAcquisitions, addBottleToCellar, moveCellarBottle, removeCellarBottle, getRackGrid } from '@/lib/storage';
 import {
   formatCurrency, formatCurrencyExact, formatLocation,
@@ -111,9 +112,13 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
             <p className="mt-1 text-[11px] text-cream-300/50">Persoonlijke inschatting binnen het drinkvenster, geen garantie.</p>
           </div>}
           {wine.notes && (
-            <p className="mt-3 text-sm text-cream-300/60 italic">{wine.notes}</p>
+            <p className="mt-3 whitespace-pre-line text-sm text-cream-300/60 italic">{wine.notes}</p>
           )}
         </Card>
+
+        {!guest && <Card><WineLabelPhoto wineId={wine.id} imageUrl={wine.imageUrl} onSaved={refresh} /></Card>}
+        {guest && wine.imageUrl && <Card><img src={wine.imageUrl} alt="Wijnetiket" className="max-h-64 w-full object-contain" /></Card>}
+        {!guest && <Link href={`/kelder/wijn/${params.id}/proeven`} className="block rounded-xl bg-gold-500 px-4 py-3 text-center text-sm font-semibold text-navy-950">🍷 Vijf proefvragen beantwoorden</Link>}
 
         {/* Value card */}
         {!guest && <Card>

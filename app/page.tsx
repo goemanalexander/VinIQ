@@ -108,6 +108,8 @@ export default function DashboardPage() {
           </Link>
         </section>
 
+        <section className="mb-6"><Link href="/kelder/vanavond"><Card className="flex items-center gap-3 p-4"><Wine size={20} className="text-gold-400" /><div><p className="font-display text-sm text-cream-100">Wat drinken we vanavond?</p><p className="text-xs text-cream-300/60">Persoonlijke suggesties uit je kelder</p></div><span className="ml-auto text-gold-400">→</span></Card></Link></section>
+
         {/* Wine list */}
         {activeWines.length > 0 && (
           <section className="mb-6">
