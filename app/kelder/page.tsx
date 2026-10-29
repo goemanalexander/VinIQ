@@ -1,17 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Search, Plus } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
-import { getAllWinesWithCount, exportLocalCellarSnapshot } from '@/lib/storage';
+import { getAllWinesWithCount, exportLocalCellarSnapshot, importCellarSnapshot, type CellarSnapshot } from '@/lib/storage';
 import { DRINK_WINDOW_COLOR, DRINK_WINDOW_LABEL, formatCurrency } from '@/lib/utils';
 import type { WineWithCount } from '@/lib/types';
 
 export default function KelderPage() {
   const [wines, setWines] = useState<WineWithCount[]>([]);
   const [query, setQuery] = useState('');
+  const backupInput = useRef<HTMLInputElement>(null);
+  const [backupMessage, setBackupMessage] = useState('');
 
   useEffect(() => {
     getAllWinesWithCount().then(all => setWines(all.filter(w => w.bottleCount > 0)));
@@ -28,6 +30,23 @@ export default function KelderPage() {
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
+  }
+
+  async function restoreBackup(file?: File) {
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text()) as CellarSnapshot;
+      if (!parsed || !Array.isArray(parsed.bottles) || !Array.isArray(parsed.wines)) throw new Error('Ongeldig bestand');
+      const current = exportLocalCellarSnapshot();
+      if (!window.confirm(`Je huidige kelder bevat ${current.bottles.length} flessen. Het back-upbestand bevat ${parsed.bottles.length} flessen. Wil je je huidige kelder vervangen? Download eerst een back-up als je wijzigingen wilt bewaren.`)) return;
+      importCellarSnapshot(parsed);
+      setWines((await getAllWinesWithCount()).filter(w => w.bottleCount > 0));
+      setBackupMessage(`Back-up hersteld: ${parsed.bottles.length} flessen.`);
+    } catch (error) {
+      setBackupMessage(error instanceof Error ? error.message : 'Kon back-up niet herstellen');
+    } finally {
+      if (backupInput.current) backupInput.current.value = '';
+    }
   }
 
   const filtered = query.trim()
@@ -64,6 +83,10 @@ export default function KelderPage() {
         </div>
 
         <button type="button" onClick={downloadBackup} className="mb-5 rounded-lg border border-gold-500/30 px-3 py-2 text-xs text-cream-100 hover:bg-gold-500/10">Download back-up van mijn kelder (JSON)</button>
+
+        <input ref={backupInput} type="file" accept="application/json,.json" className="hidden" aria-label="Back-upbestand kiezen" onChange={e => void restoreBackup(e.target.files?.[0])} />
+        <button type="button" onClick={() => backupInput.current?.click()} className="mb-5 ml-2 rounded-lg border border-gold-500/30 px-3 py-2 text-xs text-cream-100 hover:bg-gold-500/10">Back-up herstellen</button>
+        {backupMessage && <p role="status" className="mb-4 text-xs text-cream-100">{backupMessage}</p>}
 
         {/* Wine list */}
         {filtered.length > 0 ? (
