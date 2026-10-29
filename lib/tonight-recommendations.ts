@@ -28,5 +28,9 @@ export function explainTonight(wines: WineWithCount[], mood: RecommendationMood,
     if (mood !== 'fris' && w.color === 'red') score += 5;
     if (window.from && year >= window.from && (!window.to || year <= window.to)) reasons.push(window.estimated ? 'Binnen het geschatte drinkvenster.' : 'Binnen het opgegeven drinkvenster.');
     return { wine: w, score, reasons: reasons.slice(0, 3), tasteReason: match.reason };
-  }).sort((a, b) => b.score - a.score || a.wine.wineName.localeCompare(b.wine.wineName)).map(x => x.wine);
+  }).sort((a, b) => b.score - a.score || a.wine.wineName.localeCompare(b.wine.wineName)).map(({ wine, reasons, tasteReason }) => ({ wine, reasons, tasteReason }));
+}
+
+export function recommendTonight(wines: WineWithCount[], mood: RecommendationMood, year = new Date().getFullYear()): WineWithCount[] {
+  return explainTonight(wines, mood, year).map(item => item.wine);
 }
