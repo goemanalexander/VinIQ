@@ -8,8 +8,11 @@ import Card from '@/components/Card';
 import { getAllWinesWithCount, exportLocalCellarSnapshot, importCellarSnapshot, type CellarSnapshot } from '@/lib/storage';
 import { DRINK_WINDOW_COLOR, DRINK_WINDOW_LABEL, formatCurrency } from '@/lib/utils';
 import type { WineWithCount } from '@/lib/types';
+import { useGuestView } from '@/components/GuestView';
+import { getDrinkWindow, formatCurrencyExact } from '@/lib/utils';
 
 export default function KelderPage() {
+  const { guest } = useGuestView();
   const [wines, setWines] = useState<WineWithCount[]>([]);
   const [query, setQuery] = useState('');
   const backupInput = useRef<HTMLInputElement>(null);
@@ -82,13 +85,13 @@ export default function KelderPage() {
           <p className="text-xs text-cream-300/60">Kies hieronder een wijn om flessen toe te voegen, op te drinken of te verplaatsen.</p>
         </div>
 
-        <button type="button" onClick={downloadBackup} className="mb-5 rounded-lg border border-gold-500/30 px-3 py-2 text-xs text-cream-100 hover:bg-gold-500/10">Download back-up van mijn kelder (JSON)</button>
+        {!guest && <button type="button" onClick={downloadBackup} className="mb-5 rounded-lg border border-gold-500/30 px-3 py-2 text-xs text-cream-100 hover:bg-gold-500/10">Download back-up van mijn kelder (JSON)</button>}
 
-        <input ref={backupInput} type="file" accept="application/json,.json" className="hidden" aria-label="Back-upbestand kiezen" onChange={e => void restoreBackup(e.target.files?.[0])} />
-        <button type="button" onClick={() => backupInput.current?.click()} className="mb-5 ml-2 rounded-lg border border-gold-500/30 px-3 py-2 text-xs text-cream-100 hover:bg-gold-500/10">Back-up herstellen</button>
+        {!guest && <input ref={backupInput} type="file" accept="application/json,.json" className="hidden" aria-label="Back-upbestand kiezen" onChange={e => void restoreBackup(e.target.files?.[0])} />}
+        {!guest && <button type="button" onClick={() => backupInput.current?.click()} className="mb-5 ml-2 rounded-lg border border-gold-500/30 px-3 py-2 text-xs text-cream-100 hover:bg-gold-500/10">Back-up herstellen</button>}
         {backupMessage && <p role="status" className="mb-4 text-xs text-cream-100">{backupMessage}</p>}
 
-        <Link href="/kelder/toevoegen" className="mb-5 flex items-center justify-center gap-2 rounded-full bg-gold-500 px-4 py-3 text-sm font-semibold text-navy-950"><Plus size={16} /> Nieuwe wijn toevoegen</Link>
+        {!guest && <Link href="/kelder/toevoegen" className="mb-5 flex items-center justify-center gap-2 rounded-full bg-gold-500 px-4 py-3 text-sm font-semibold text-navy-950"><Plus size={16} /> Nieuwe wijn toevoegen</Link>}
 
         {/* Wine list */}
         {filtered.length > 0 ? (
@@ -107,14 +110,14 @@ export default function KelderPage() {
                     {wine.vintage ?? 'N.V.'} · {wine.region}
                   </p>
                   <p className={`mt-1 text-[11px] ${DRINK_WINDOW_COLOR[wine.drinkWindowStatus]}`}>
-                    {DRINK_WINDOW_LABEL[wine.drinkWindowStatus]}
+                    {DRINK_WINDOW_LABEL[wine.drinkWindowStatus]}{getDrinkWindow(wine).estimated && getDrinkWindow(wine).from ? ' · indicatie' : ''}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 text-right shrink-0">
                   <span className="font-display text-xl text-cream-100">×{wine.bottleCount}</span>
-                  {wine.avgPurchasePrice > 0 && (
-                    <span className="text-[11px] text-cream-300/40">
-                      {formatCurrency(wine.avgPurchasePrice)}/fl.
+                  {!guest && wine.avgPurchasePrice > 0 && (
+                    <span className="text-sm font-semibold text-gold-300">
+                      {formatCurrencyExact(wine.avgPurchasePrice)}/fl.
                     </span>
                   )}
                 </div>

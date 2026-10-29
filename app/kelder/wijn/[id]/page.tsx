@@ -11,12 +11,15 @@ import {
   DRINK_WINDOW_LABEL, DRINK_WINDOW_COLOR
 } from '@/lib/utils';
 import type { WineWithCount, Bottle, Acquisition } from '@/lib/types';
+import { useGuestView } from '@/components/GuestView';
+import { getDrinkWindow } from '@/lib/utils';
 
 const COLOR_NL: Record<string, string> = {
   red: 'Rood', white: 'Wit', rosé: 'Rosé', sparkling: 'Mousseux', other: 'Overig',
 };
 
 export default function WijnDetailPage({ params }: { params: { id: string } }) {
+  const { guest } = useGuestView();
   const router = useRouter();
   const [wine, setWine] = useState<WineWithCount | null>(null);
   const [bottles, setBottles] = useState<Bottle[]>([]);
@@ -40,7 +43,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
     return value === 'outside' ? { type: 'outside' as const } : { type: 'rack' as const, row: value[0] as 'A'|'B'|'C'|'D', col: Number(value.slice(1)) as 1|2|3|4|5|6 };
   }
   async function action(kind: 'add'|'move'|'drank'|'gifted_away') {
-    if (busy) return;
+    if (busy || guest) return;
     if (kind !== 'add' && !selectedBottle) return;
     if (kind !== 'add' && !window.confirm(kind === 'move' ? 'Deze fles verplaatsen?' : 'Deze fles uit de voorraad halen?')) return;
     setBusy(true); setError('');
@@ -85,35 +88,37 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
             {wine.bottleSizeML !== 750 && <div><span className="text-cream-300/50">Formaat </span><span className="text-cream-200">{wine.bottleSizeML} ml</span></div>}
             {wine.personalRating > 0 && <div><span className="text-cream-300/50">Beoordeling </span><span className="text-gold-300">{wine.personalRating}/10</span></div>}
           </div>
-          {wine.drinkWindowStatus !== 'unknown' && (
-            <p className={`mt-3 text-xs ${DRINK_WINDOW_COLOR[wine.drinkWindowStatus]}`}>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className={`text-xs ${DRINK_WINDOW_COLOR[wine.drinkWindowStatus]}`}>
               {DRINK_WINDOW_LABEL[wine.drinkWindowStatus]}
-              {wine.drinkFrom && wine.drinkTo ? ` (${wine.drinkFrom}–${wine.drinkTo})` : ''}
+              {getDrinkWindow(wine).from && getDrinkWindow(wine).to ? ` (${getDrinkWindow(wine).from}–${getDrinkWindow(wine).to})` : ''}
+              {getDrinkWindow(wine).estimated && getDrinkWindow(wine).from ? ' · indicatie' : ''}
             </p>
-          )}
+            {!guest && <Link href={`/kelder/wijn/${params.id}/bewerken`} className="shrink-0 text-xs text-gold-300 underline">Aanpassen</Link>}
+          </div>
           {wine.notes && (
             <p className="mt-3 text-sm text-cream-300/60 italic">{wine.notes}</p>
           )}
         </Card>
 
         {/* Value card */}
-        <Card>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-cream-300/40">Waarde</p>
+        {!guest && <Card>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gold-300">Waarde van je voorraad</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] text-cream-300/50 mb-0.5">Aankoop/fl.</p>
-              <p className="font-display text-lg text-cream-200">{formatCurrencyExact(wine.avgPurchasePrice)}</p>
+              <p className="font-display text-2xl text-cream-100">{formatCurrencyExact(wine.avgPurchasePrice)}</p>
               <p className="text-[10px] text-cream-300/40">Totaal {formatCurrency(totalPurchaseValue)}</p>
             </div>
             <div>
               <p className="text-[10px] text-cream-300/50 mb-0.5">Marktwaarde/fl.</p>
-              <p className="font-display text-lg text-gold-300">
+              <p className="font-display text-2xl text-gold-300">
                 {formatCurrencyExact(wine.latestMarketValue ?? wine.avgPurchasePrice)}
               </p>
               <p className="text-[10px] text-cream-300/40">Totaal {formatCurrency(totalMarketValue)}</p>
             </div>
           </div>
-        </Card>
+        </Card>}
 
         {/* Bottle locations */}
         {bottles.length > 0 && (
@@ -146,7 +151,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
                   <span className="text-cream-300/40 ml-2">× {a.quantity}</span>
                 </div>
                 <span className="text-gold-300">
-                  {a.type === 'gift' ? 'Geschenk' : formatCurrencyExact(a.pricePerBottle)}
+                  {a.type === 'gift' ? 'Geschenk' : guest ? 'Aangekocht' : formatCurrencyExact(a.pricePerBottle)}
                 </span>
               </div>
             ))}
@@ -154,7 +159,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
         )}
 
 
-        <Card className="space-y-3">
+        {!guest && <Card className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-cream-300/60">Voorraad beheren</p>
           <label className="block text-xs text-cream-300/60">Fles kiezen</label>
           <select value={selectedBottle} onChange={e => setSelectedBottle(e.target.value)} className="w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100">
@@ -178,7 +183,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
           </div>
           {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
           <p className="text-xs text-cream-300/40">Wijzigingen worden voorlopig alleen op dit toestel opgeslagen.</p>
-        </Card>
+        </Card>}
       </div>
     </>
   );

@@ -72,3 +72,42 @@ test('existing wine price uses decimal keypad and accepts comma', async ({ page 
   await page.reload();
   await expect(page.getByText('9,75', { exact: false }).first()).toBeVisible();
 });
+
+test('guest view hides prices, totals, backups and edit actions across pages', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('Aankoopwaarde')).toBeVisible();
+  await page.getByRole('button', { name: 'Gastweergave inschakelen' }).click();
+  await expect(page.getByText('Aankoopwaarde')).toHaveCount(0);
+  await expect(page.getByText('Marktwaarde')).toHaveCount(0);
+  await page.goto('/kelder');
+  await expect(page.getByRole('button', { name: 'Download back-up van mijn kelder (JSON)' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Nieuwe wijn toevoegen' })).toHaveCount(0);
+  await expect(page.getByText('€/fl.', { exact: false })).toHaveCount(0);
+  await page.goto('/kelder/wijn/seed-wine-bennati');
+  await expect(page.getByText('Waarde van je voorraad')).toHaveCount(0);
+  await expect(page.getByText('Aankoop/fl.')).toHaveCount(0);
+  await expect(page.getByText('Voorraad beheren')).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Gastweergave uitschakelen' })).toBeVisible();
+  await page.getByRole('button', { name: 'Gastweergave uitschakelen' }).click();
+  await expect(page.getByText('Waarde van je voorraad')).toBeVisible();
+});
+
+test('indicative drinking window can be manually edited and survives reload', async ({ page }) => {
+  await page.goto('/kelder');
+  await page.goto('/kelder/wijn/seed-wine-bennati');
+  await expect(page.getByText('indicatie', { exact: false }).first()).toBeVisible();
+  await page.getByRole('link', { name: 'Aanpassen' }).click();
+  await expect(page.getByText('Stijlindicatie:', { exact: false })).toBeVisible();
+  await page.getByLabel('Drinken vanaf').fill('2028');
+  await page.getByLabel('Drinken tot').fill('2038');
+  await page.getByRole('button', { name: 'Drinkvenster opslaan' }).click();
+  await expect(page.getByText('2028–2038', { exact: false })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('2028–2038', { exact: false })).toBeVisible();
+  await page.getByRole('link', { name: 'Aanpassen' }).click();
+  await page.getByLabel('Drinken vanaf').fill('2039');
+  await page.getByLabel('Drinken tot').fill('2030');
+  await page.getByRole('button', { name: 'Drinkvenster opslaan' }).click();
+  await expect(page.getByText('Ongeldig drinkvenster')).toBeVisible();
+});
