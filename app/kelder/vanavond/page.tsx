@@ -35,7 +35,7 @@ export default function TonightPage() {
         {profile.likedAcidity.length > 0 && <p className="mt-1 text-sm text-cream-200">Zuurbeleving: {profile.likedAcidity.join(', ')}</p>}
         {profile.likedStyles.length > 0 && <p className="mt-1 text-sm text-cream-200">Goed beoordeelde stijlen: {profile.likedStyles.join(', ')}</p>}
         {profile.confidence === 'start' && <p className="mt-2 text-xs text-cream-300/60">Proef minstens 3 verschillende wijnen om persoonlijke stijlmatches te activeren. Tot dan gebruiken we de bestaande kelder- en drinkvensterregels.</p>}
-        <p className="mt-2 text-xs text-cream-300/50">Kleuren zijn jouw eigen smaakassociaties, geen objectieve wijnaroma's. Alleen positieve proefnotities tellen mee voor je voorkeuren.</p>
+        <p className="mt-2 text-xs text-cream-300/50">Kleuren zijn jouw eigen smaakassociaties, geen objectieve wijnaroma’s. Alleen positieve proefnotities tellen mee voor je voorkeuren.</p>
       </Card>
       {choices.length ? choices.map(({ wine: w, reasons }, i) => <Link key={w.id} href={`/kelder/wijn/${w.id}`} className="block">
         <Card>
