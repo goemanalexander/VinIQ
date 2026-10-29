@@ -24,12 +24,13 @@ export function GuestViewProvider({ children }: { children: ReactNode }) {
   // Render no private data until this tab's privacy preference has been read.
   if (guest === null) return null;
   return <GuestContext.Provider value={{ guest, setGuest }}>
-    <div className="mx-auto max-w-md px-5 pt-2">
+    <div className="mx-auto flex max-w-md justify-end px-5 pt-2">
       <button type="button" aria-pressed={guest} aria-label={guest ? 'Gastweergave uitschakelen' : 'Gastweergave inschakelen'}
         onClick={() => setGuest(!guest)}
-        className={`flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold ${guest ? 'border-gold-500 bg-gold-500/20 text-gold-300' : 'border-gold-500/20 text-cream-300/60'}`}>
-        {guest ? <EyeOff size={15} /> : <Eye size={15} />}
-        {guest ? 'Gastweergave aan · prijzen verborgen · tik om te stoppen' : 'Gastweergave · verberg prijzen'}
+        title={guest ? "Gastweergave uitschakelen" : "Gastweergave inschakelen: verberg prijzen"}
+        className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-medium ${guest ? 'border-gold-500 bg-gold-500/20 text-gold-300' : 'border-gold-500/20 text-cream-300/60'}`}>
+        {guest ? <EyeOff size={14} /> : <Eye size={14} /> }
+        {guest ? 'Gast aan' : 'Gastweergave'}
       </button>
     </div>
     {children}
