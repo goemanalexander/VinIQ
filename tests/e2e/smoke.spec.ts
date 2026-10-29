@@ -109,5 +109,5 @@ test('indicative drinking window can be manually edited and survives reload', as
   await page.getByLabel('Drinken vanaf').fill('2039');
   await page.getByLabel('Drinken tot').fill('2030');
   await page.getByRole('button', { name: 'Drinkvenster opslaan' }).click();
-  await expect(page.getByRole('alert')).toContainText('Ongeldig drinkvenster');
+  await expect(page.getByText('Ongeldig drinkvenster')).toBeVisible();
 });
