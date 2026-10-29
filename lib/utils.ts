@@ -125,3 +125,28 @@ export function weightedAvgPrice(acquisitions: Array<{ quantity: number; pricePe
   const totalCents = acquisitions.reduce((s, a) => s + Math.round(a.pricePerBottle * 100) * a.quantity, 0);
   return Math.round(totalCents / totalQty) / 100;
 }
+
+/**
+ * Conservative, style-based *indication*, never a producer-verified drinking window.
+ * Manual drinkFrom/drinkTo on the Wine record always take precedence.
+ * Without a vintage we cannot infer a meaningful calendar interval.
+ */
+export function getDrinkWindow(wine: {
+  wineName: string; appellation: string; region: string; color: string;
+  vintage: number | null; drinkFrom?: number; drinkTo?: number;
+}): { from?: number; to?: number; estimated: boolean } {
+  if (wine.drinkFrom !== undefined || wine.drinkTo !== undefined) {
+    return { from: wine.drinkFrom, to: wine.drinkTo, estimated: false };
+  }
+  if (!wine.vintage) return { estimated: true };
+  const name = `${wine.wineName} ${wine.appellation} ${wine.region}`.toLowerCase();
+  let start = 1;
+  let end = 7;
+  if (name.includes('amarone')) { start = 3; end = 15; }
+  else if (name.includes('gran reserva')) { start = 4; end = 12; }
+  else if (name.includes('riserva') || name.includes('reserva')) { start = 3; end = 10; }
+  else if (name.includes('primitivo') || name.includes('governo') || name.includes('appassimento')) { start = 1; end = 6; }
+  else if (wine.color === 'white' || wine.color === 'rosé') { start = 0; end = 4; }
+  else if (wine.color === 'sparkling') { start = 0; end = 5; }
+  return { from: wine.vintage + start, to: wine.vintage + end, estimated: true };
+}
