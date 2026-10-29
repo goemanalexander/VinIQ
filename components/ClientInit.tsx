@@ -16,7 +16,7 @@ export default function ClientInit() {
     const onVisibility = () => { if (document.visibilityState === 'visible') void run(); };
     const onCloudUpdated = () => { window.location.reload(); };
     window.addEventListener('viniq-cloud-updated', onCloudUpdated);
-    const onStorage = (event: StorageEvent) => { if (event.key === 'viniq-cellar-v1') void run(); };
+    const onStorage = (event: StorageEvent) => { if (event.key === 'viniq-cellar-v1') window.location.reload(); };
     window.addEventListener('viniq-cellar-changed', run);
     window.addEventListener('online', run);
     window.addEventListener('focus', run);
