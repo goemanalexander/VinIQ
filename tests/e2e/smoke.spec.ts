@@ -53,7 +53,7 @@ test('gift adds two bottles, occupies only one rack slot and records history', a
   await page.getByLabel('Positie eerste fles').selectOption('C5');
   await page.getByRole('button', { name: 'Wijn en flessen toevoegen' }).click();
   await expect(page.getByText('×2').first()).toBeVisible();
-  await expect(page.getByText('Rek C5', { exact: true })).toBeVisible();
+  await expect(page.locator('span').getByText('Rek C5', { exact: true })).toBeVisible();
   await expect(page.getByText('Buiten rek', { exact: false }).first()).toBeVisible();
   await expect(page.getByText('Geschenk', { exact: true }).first()).toBeVisible();
   await page.goto('/kelder/rek');
