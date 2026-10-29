@@ -111,3 +111,31 @@ test('indicative drinking window can be manually edited and survives reload', as
   await page.getByRole('button', { name: 'Drinkvenster opslaan' }).click();
   await expect(page.getByText('Ongeldig drinkvenster')).toBeVisible();
 });
+
+test('compact guest toggle hides prices and remains usable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const toggle = page.getByRole('button', { name: 'Gastweergave inschakelen' });
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveText('Gastweergave');
+  const width = await toggle.evaluate(el => el.getBoundingClientRect().width);
+  expect(width).toBeLessThan(180);
+  await toggle.click();
+  await expect(page.getByRole('button', { name: 'Gastweergave uitschakelen' })).toHaveText('Gast aan');
+  await expect(page.getByText('Aankoopwaarde')).toHaveCount(0);
+});
+
+test('personal drinking recommendation is separate from general window and respects overrides', async ({ page }) => {
+  await page.goto('/kelder/wijn/seed-wine-bennati');
+  await expect(page.getByText('Voor jouw smaak:', { exact: false })).toBeVisible();
+  await expect(page.getByText('Persoonlijke inschatting binnen het drinkvenster, geen garantie.')).toBeVisible();
+  await expect(page.getByText('indicatie', { exact: false }).first()).toBeVisible();
+  await page.getByRole('link', { name: 'Aanpassen' }).click();
+  await page.getByLabel('Drinken vanaf').fill('2030');
+  await page.getByLabel('Drinken tot').fill('2032');
+  await page.getByRole('button', { name: 'Drinkvenster opslaan' }).click();
+  await expect(page.getByText('2030–2032', { exact: false }).first()).toBeVisible();
+  await expect(page.getByText('Voor jouw smaak: 2031')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Voor jouw smaak: 2031')).toBeVisible();
+});
