@@ -19,7 +19,7 @@ import type {
 } from './types';
 import { genId } from './utils';
 import { makeInitialCellar } from './initial-cellar';
-import { deriveDrinkWindowStatus } from './utils';
+import { deriveDrinkWindowStatus, getDrinkWindow } from './utils';
 
 // ─── IN-MEMORY STORE (Phase 1 placeholder) ──────────────────────────────────
 
@@ -189,11 +189,12 @@ export async function getWineWithCount(id: string): Promise<WineWithCount | null
   if (!wine) return null;
   const count = await getBottleCount(id);
   const valuation = await getLatestValuation(id);
+  const window = getDrinkWindow(wine);
   return {
     ...wine,
     bottleCount: count,
     latestMarketValue: valuation?.valuePerBottle,
-    drinkWindowStatus: deriveDrinkWindowStatus(wine.drinkFrom, wine.drinkTo),
+    drinkWindowStatus: deriveDrinkWindowStatus(window.from, window.to),
   };
 }
 
@@ -445,4 +446,20 @@ export async function addNewWineToCellar(input: {
   _acquisitions = next.acquisitions;
   _events = next.events;
   return wineId;
+}
+
+/** Only update the editable drink window; never touch bottle stock or history. */
+export async function setWineDrinkWindow(id: string, from?: number, to?: number): Promise<void> {
+  ensureLoaded();
+  if (!_wines.some(w => w.id === id)) throw new Error('Wijn niet gevonden');
+  const valid = (n: number | undefined) => n === undefined || (Number.isInteger(n) && n >= 1800 && n <= 2200);
+  if (!valid(from) || !valid(to) || (from !== undefined && to !== undefined && from > to)) {
+    throw new Error('Ongeldig drinkvenster');
+  }
+  const next = _wines.map(w => w.id === id ? { ...w, drinkFrom: from, drinkTo: to } : w);
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    wines: next, bottles: _bottles, acquisitions: _acquisitions,
+    valuations: _valuations, events: _events,
+  }));
+  _wines = next;
 }
