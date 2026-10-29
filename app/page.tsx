@@ -9,8 +9,10 @@ import { getCellarSummary, getAllWinesWithCount } from '@/lib/storage';
 import { formatCurrency, DRINK_WINDOW_COLOR, DRINK_WINDOW_LABEL } from '@/lib/utils';
 import type { CellarSummary, WineWithCount } from '@/lib/types';
 import { APP_VERSION } from '@/lib/version';
+import { useGuestView } from '@/components/GuestView';
 
 export default function DashboardPage() {
+  const { guest } = useGuestView();
   const [summary, setSummary] = useState<CellarSummary | null>(null);
   const [wines, setWines] = useState<WineWithCount[]>([]);
 
@@ -39,7 +41,7 @@ export default function DashboardPage() {
                 <p className="mt-1 text-[10px] uppercase tracking-wide text-cream-300/50">Wijnen</p>
               </Card>
             </div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            {!guest && <div className="grid grid-cols-2 gap-3 mb-3">
               <Card className="text-center py-4">
                 <p className="font-display text-2xl text-gold-300">{formatCurrency(summary.purchaseValue)}</p>
                 <p className="mt-1 text-[10px] uppercase tracking-wide text-cream-300/50">Aankoopwaarde</p>
@@ -53,7 +55,7 @@ export default function DashboardPage() {
                   </p>
                 )}
               </Card>
-            </div>
+            </div>}
             {/* Rack occupancy */}
             <Card className="flex items-center justify-between py-3">
               <div className="flex items-center gap-2 text-sm text-cream-300/60">
@@ -78,12 +80,12 @@ export default function DashboardPage() {
         {/* Quick actions */}
         <section className="mb-6">
           <div className="grid grid-cols-2 gap-3">
-            <Link href="/kelder/toevoegen">
+            {!guest && <Link href="/kelder/toevoegen">
               <Card className="flex flex-col gap-2 p-3.5 transition-transform active:scale-[0.98]">
                 <Plus size={18} strokeWidth={1.6} className="text-cream-300/50" />
                 <span className="font-display text-sm text-cream-200">Fles toevoegen</span>
               </Card>
-            </Link>
+            </Link>}
             <Link href="/kelder/rek">
               <Card className="flex flex-col gap-2 p-3.5 transition-transform active:scale-[0.98]">
                 <Grid3X3 size={18} strokeWidth={1.6} className="text-gold-400/70" />
@@ -142,12 +144,12 @@ export default function DashboardPage() {
             <p className="font-display text-3xl">🍾</p>
             <p className="mt-3 font-display text-base text-cream-100">Kelder is leeg</p>
             <p className="mt-1 text-sm text-cream-300/60">Voeg je eerste fles toe om te beginnen.</p>
-            <Link
+            {!guest && <Link
               href="/kelder/toevoegen"
               className="mt-4 inline-block rounded-full bg-gold-500 px-6 py-2.5 text-sm font-semibold text-navy-950"
             >
               Fles toevoegen
-            </Link>
+            </Link>}
           </Card>
         )}
 
