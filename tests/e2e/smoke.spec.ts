@@ -227,7 +227,7 @@ test('taste profile starts cautiously and learns from three different rated wine
         'Welke kleur geef je de smaak? Bordeaux',
         'Hoe voelt hij in je mond? Boterig',
         'Zou je hem opnieuw kopen? Zeker!'
-      ].filter(Boolean).join('\\n');
+      ].filter(Boolean).join('\n');
     }
     localStorage.setItem(key, JSON.stringify(snapshot));
   });
