@@ -61,6 +61,14 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
   if (!wine) return null;
 
   const personalMoment = getPersonalDrinkMoment(wine);
+  const locationCounts = new Map<string, number>();
+  const bottleLabels = bottles.map(b => {
+    const name = formatLocation(b.location);
+    const count = (locationCounts.get(name) ?? 0) + 1;
+    locationCounts.set(name, count);
+    const duplicates = bottles.filter(other => formatLocation(other.location) === name).length > 1;
+    return duplicates ? `${name} · fles ${count}` : name;
+  });
   const totalPurchaseValue = wine.avgPurchasePrice * wine.bottleCount;
   const totalMarketValue = (wine.latestMarketValue ?? wine.avgPurchasePrice) * wine.bottleCount;
 
@@ -169,7 +177,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
           <p className="text-xs font-semibold uppercase tracking-wide text-cream-300/60">Voorraad beheren</p>
           <label className="block text-xs text-cream-300/60">Fles kiezen</label>
           <select value={selectedBottle} onChange={e => setSelectedBottle(e.target.value)} className="w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100">
-            {bottles.map(b => <option key={b.id} value={b.id}>{formatLocation(b.location)} · {b.id.slice(-5)}</option>)}
+            {bottles.map((b, i) => <option key={b.id} value={b.id}>{bottleLabels[i]}</option>)}
           </select>
           <div className="grid grid-cols-2 gap-2">
             <button disabled={busy || !selectedBottle} onClick={() => action('drank')} className="rounded-lg bg-burgundy-700 p-3 text-sm text-white disabled:opacity-40">🍷 Opgedronken</button>
