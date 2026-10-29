@@ -69,7 +69,7 @@ test('existing wine price uses decimal keypad and accepts comma', async ({ page 
   await expect(price).toHaveAttribute('inputmode', 'decimal');
   await price.fill('9,75');
   await page.getByRole('button', { name: '+ Fles toevoegen' }).click();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  expect(await page.getByRole('alert').allTextContents()).toEqual([]);
   await page.reload();
   await expect(page.getByText('9,75', { exact: false }).first()).toBeVisible();
 });
