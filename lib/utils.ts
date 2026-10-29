@@ -150,3 +150,35 @@ export function getDrinkWindow(wine: {
   else if (wine.color === 'sparkling') { start = 0; end = 5; }
   return { from: wine.vintage + start, to: wine.vintage + end, estimated: true };
 }
+
+/**
+ * VinIQ owner's taste profile: ripe fruit, round mouthfeel, soft tannins and
+ * low-to-medium acidity. This is an *estimated preferred moment within* the
+ * general drinking window, NOT a longer shelf-life claim or producer advice.
+ * Keep the original general/manual window untouched.
+ */
+export function getPersonalDrinkMoment(wine: {
+  wineName: string; appellation: string; region: string; color: string;
+  vintage: number | null; drinkFrom?: number; drinkTo?: number;
+}): { from: number; to: number; reason: string } | null {
+  if (wine.color !== 'red') return null;
+  const window = getDrinkWindow(wine);
+  if (window.from === undefined || window.to === undefined || window.to < window.from) return null;
+  const style = `${wine.wineName} ${wine.appellation} ${wine.region}`.toLowerCase();
+  const full = window.to - window.from;
+  // Fruit-forward wines are often best before their fruit fades.
+  const fruitForward = /primitivo|appassimento|governo|ripasso|montepulciano/.test(style);
+  // More structured, ageworthy styles can benefit from extra time to soften.
+  const structured = /amarone|gran reserva|brunello|barolo|barbaresco|châteauneuf|rioja reserva/.test(style);
+  const fraction = fruitForward ? 0.35 : structured ? 0.65 : 0.5;
+  const center = Math.round(window.from + full * fraction);
+  const radius = full >= 6 ? 1 : 0;
+  const from = Math.max(window.from, center - radius);
+  const to = Math.min(window.to, center + radius);
+  const reason = fruitForward
+    ? 'Je houdt van rijp fruit: liever genieten voordat de fruitigheid afneemt.'
+    : structured
+      ? 'Je houdt van zachte tannines: wat extra rijping kan de wijn ronder maken.'
+      : 'Een inschatting voor jouw voorkeur voor ronde, rijpe rode wijn.';
+  return { from, to, reason };
+}
