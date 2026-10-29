@@ -12,7 +12,7 @@ import {
 } from '@/lib/utils';
 import type { WineWithCount, Bottle, Acquisition } from '@/lib/types';
 import { useGuestView } from '@/components/GuestView';
-import { getDrinkWindow } from '@/lib/utils';
+import { getDrinkWindow, getPersonalDrinkMoment } from '@/lib/utils';
 
 const COLOR_NL: Record<string, string> = {
   red: 'Rood', white: 'Wit', rosé: 'Rosé', sparkling: 'Mousseux', other: 'Overig',
@@ -60,6 +60,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
 
   if (!wine) return null;
 
+  const personalMoment = getPersonalDrinkMoment(wine);
   const totalPurchaseValue = wine.avgPurchasePrice * wine.bottleCount;
   const totalMarketValue = (wine.latestMarketValue ?? wine.avgPurchasePrice) * wine.bottleCount;
 
@@ -96,6 +97,11 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
             </p>
             {!guest && <Link href={`/kelder/wijn/${params.id}/bewerken`} className="shrink-0 text-xs text-gold-300 underline">Aanpassen</Link>}
           </div>
+          {personalMoment && <div className="mt-3 rounded-lg border border-gold-500/20 bg-gold-500/5 p-3">
+            <p className="text-xs font-semibold text-gold-300">Voor jouw smaak: {personalMoment.from}{personalMoment.to !== personalMoment.from ? `–${personalMoment.to}` : ''}</p>
+            <p className="mt-1 text-xs text-cream-300/70">{personalMoment.reason}</p>
+            <p className="mt-1 text-[11px] text-cream-300/50">Persoonlijke inschatting binnen het drinkvenster, geen garantie.</p>
+          </div>}
           {wine.notes && (
             <p className="mt-3 text-sm text-cream-300/60 italic">{wine.notes}</p>
           )}
