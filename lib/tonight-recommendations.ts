@@ -22,11 +22,12 @@ export function explainTonight(wines: WineWithCount[], mood: RecommendationMood,
     score += match.points;
     if (match.reason) reasons.push(match.reason);
     const haystack = [w.wineName, w.region, w.appellation, ...w.grapes].join(' ').toLowerCase();
-    if (mood === 'vol' && /amarone|ripasso|primitivo|appassimento|monastrell|châteauneuf|brunello|syrah/.test(haystack)) score += 20;
-    if (mood === 'zacht' && /merlot|grenache|garnacha|rioja|montepulciano|governo|primitivo/.test(haystack)) score += 20;
-    if (mood === 'fris' && (w.color === 'white' || w.color === 'rosé' || w.color === 'sparkling')) score += 20;
+    if (mood === 'vol' && /amarone|ripasso|primitivo|appassimento|monastrell|châteauneuf|brunello|syrah/.test(haystack)) { score += 20; reasons.push('Past bij je keuze voor vol en rijp rood.'); }
+    if (mood === 'zacht' && /merlot|grenache|garnacha|rioja|montepulciano|governo|primitivo/.test(haystack)) { score += 20; reasons.push('Past bij je keuze voor zacht en rond.'); }
+    if (mood === 'fris' && (w.color === 'white' || w.color === 'rosé' || w.color === 'sparkling')) { score += 20; reasons.push('Wit, rosé of mousserend zoals gevraagd.'); }
     if (mood !== 'fris' && w.color === 'red') score += 5;
     if (window.from && year >= window.from && (!window.to || year <= window.to)) reasons.push(window.estimated ? 'Binnen het geschatte drinkvenster.' : 'Binnen het opgegeven drinkvenster.');
+    if (!reasons.length) reasons.push('Een beschikbare fles uit je kelder; weinig persoonlijke proefgegevens.');
     return { wine: w, score, reasons: reasons.slice(0, 3), tasteReason: match.reason };
   }).sort((a, b) => b.score - a.score || a.wine.wineName.localeCompare(b.wine.wineName)).map(({ wine, reasons, tasteReason }) => ({ wine, reasons, tasteReason }));
 }
