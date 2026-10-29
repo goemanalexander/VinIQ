@@ -369,3 +369,80 @@ export function importCellarSnapshot(snapshot: CellarSnapshot): void {
   _valuations = [...snapshot.valuations];
   _events = [...snapshot.events];
 }
+
+/**
+ * Create a wine and its initial purchase/gift as one browser-local transaction.
+ * Never create a wine without its bottles, acquisition and event history.
+ */
+export async function addNewWineToCellar(input: {
+  producer: string;
+  wineName: string;
+  vintage: number | null;
+  country: string;
+  region: string;
+  appellation: string;
+  color: Wine['color'];
+  grapes: string[];
+  bottleSizeML: Wine['bottleSizeML'];
+  quantity: number;
+  pricePerBottle: number;
+  gift: boolean;
+  location: Bottle['location'];
+}): Promise<string> {
+  ensureLoaded();
+  const producer = input.producer.trim();
+  const wineName = input.wineName.trim();
+  if (!producer || !wineName) throw new Error('Vul producent en wijnnaam in');
+  if (input.vintage !== null && (!Number.isInteger(input.vintage) || input.vintage < 1800 || input.vintage > new Date().getFullYear() + 1)) {
+    throw new Error('Ongeldig oogstjaar');
+  }
+  if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 99) throw new Error('Aantal moet tussen 1 en 99 liggen');
+  if (!Number.isFinite(input.pricePerBottle) || input.pricePerBottle < 0) throw new Error('Ongeldige aankoopprijs');
+  if (!['red', 'white', 'rosé', 'sparkling', 'other'].includes(input.color)) throw new Error('Ongeldig wijntype');
+  if (![375, 500, 750, 1500].includes(input.bottleSizeML)) throw new Error('Ongeldig flesformaat');
+  if (_wines.some(w => w.producer.trim().toLowerCase() === producer.toLowerCase() &&
+      w.wineName.trim().toLowerCase() === wineName.toLowerCase() && w.vintage === input.vintage)) {
+    throw new Error('Deze wijn bestaat al. Voeg een fles toe via de bestaande wijn.');
+  }
+  if (!input.location || (input.location.type !== 'outside' && input.location.type !== 'rack')) throw new Error('Ongeldige locatie');
+  assertFreeLocation(input.location);
+  const now = new Date().toISOString();
+  const wineId = genId('wine');
+  const acquisitionId = genId('acq');
+  const unitPrice = input.gift ? 0 : input.pricePerBottle;
+  const wine: Wine = {
+    id: wineId, producer, wineName, vintage: input.vintage,
+    country: input.country.trim(), region: input.region.trim(), appellation: input.appellation.trim(),
+    color: input.color, grapes: input.grapes.map(g => g.trim()).filter(Boolean),
+    bottleSizeML: input.bottleSizeML, personalRating: 0, avgPurchasePrice: unitPrice, addedAt: now,
+  };
+  const acquisition: Acquisition = {
+    id: acquisitionId, wineId, type: input.gift ? 'gift' : 'purchased',
+    quantity: input.quantity, pricePerBottle: unitPrice, date: now.slice(0, 10), createdAt: now,
+  };
+  const bottles: Bottle[] = Array.from({ length: input.quantity }, (_, index) => ({
+    id: genId('bottle'), wineId, acquisitionId,
+    // Only one bottle can occupy a rack slot; additional bottles remain outside.
+    location: index === 0 ? input.location : { type: 'outside' as const },
+    addedAt: now,
+  }));
+  const events: BottleEvent[] = bottles.map(b => ({
+    id: genId('evt'), wineId, bottleId: b.id,
+    type: input.gift ? 'received_gift' : 'purchased',
+    toLocation: b.location, timestamp: now,
+  }));
+  const next = {
+    wines: [..._wines, wine],
+    bottles: [..._bottles, ...bottles],
+    acquisitions: [..._acquisitions, acquisition],
+    valuations: _valuations,
+    events: [..._events, ...events],
+  };
+  // Write the entire new state first: quota/storage errors leave the current cellar untouched.
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  _wines = next.wines;
+  _bottles = next.bottles;
+  _acquisitions = next.acquisitions;
+  _events = next.events;
+  return wineId;
+}
