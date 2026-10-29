@@ -494,4 +494,6 @@ export async function setWineDrinkWindow(id: string, from?: number, to?: number)
     valuations: _valuations, events: _events,
   }));
   _wines = next;
+  window.localStorage.setItem('viniq-cloud-dirty', '1');
+  window.dispatchEvent(new Event('viniq-cellar-changed'));
 }
