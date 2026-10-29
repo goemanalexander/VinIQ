@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, Plus } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
+import CloudSyncPanel from '@/components/CloudSyncPanel';
 import { getAllWinesWithCount, exportLocalCellarSnapshot, importCellarSnapshot, type CellarSnapshot } from '@/lib/storage';
 import { DRINK_WINDOW_COLOR, DRINK_WINDOW_LABEL, formatCurrency } from '@/lib/utils';
 import type { WineWithCount } from '@/lib/types';
@@ -68,6 +69,8 @@ export default function KelderPage() {
     <>
       <PageHeader title="Mijn Kelder" subtitle={`${totalBottles} fles${totalBottles !== 1 ? 'sen' : ''}`} />
       <div className="px-5 pb-8 pt-4">
+
+        {!guest && <CloudSyncPanel />}
 
         {/* Search */}
         <div className="relative mb-3">
