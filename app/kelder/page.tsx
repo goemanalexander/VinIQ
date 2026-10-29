@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Search, Plus } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
-import { getAllWinesWithCount } from '@/lib/storage';
+import { getAllWinesWithCount, exportLocalCellarSnapshot } from '@/lib/storage';
 import { DRINK_WINDOW_COLOR, DRINK_WINDOW_LABEL, formatCurrency } from '@/lib/utils';
 import type { WineWithCount } from '@/lib/types';
 
@@ -16,6 +16,19 @@ export default function KelderPage() {
   useEffect(() => {
     getAllWinesWithCount().then(all => setWines(all.filter(w => w.bottleCount > 0)));
   }, []);
+
+  function downloadBackup() {
+    const snapshot = exportLocalCellarSnapshot();
+    const file = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `viniq-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
 
   const filtered = query.trim()
     ? wines.filter(w =>
@@ -49,6 +62,8 @@ export default function KelderPage() {
         <div className="mb-5">
           <p className="text-xs text-cream-300/60">Kies hieronder een wijn om flessen toe te voegen, op te drinken of te verplaatsen.</p>
         </div>
+
+        <button type="button" onClick={downloadBackup} className="mb-5 rounded-lg border border-gold-500/30 px-3 py-2 text-xs text-cream-100 hover:bg-gold-500/10">Download back-up van mijn kelder (JSON)</button>
 
         {/* Wine list */}
         {filtered.length > 0 ? (
