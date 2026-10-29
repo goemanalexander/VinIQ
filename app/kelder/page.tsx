@@ -9,7 +9,7 @@ import { getAllWinesWithCount, exportLocalCellarSnapshot, importCellarSnapshot, 
 import { DRINK_WINDOW_COLOR, DRINK_WINDOW_LABEL, formatCurrency } from '@/lib/utils';
 import type { WineWithCount } from '@/lib/types';
 import { useGuestView } from '@/components/GuestView';
-import { getDrinkWindow, formatCurrencyExact } from '@/lib/utils';
+import { getDrinkWindow, getPersonalDrinkMoment, formatCurrencyExact } from '@/lib/utils';
 
 export default function KelderPage() {
   const { guest } = useGuestView();
@@ -111,6 +111,7 @@ export default function KelderPage() {
                   </p>
                   <p className={`mt-1 text-[11px] ${DRINK_WINDOW_COLOR[wine.drinkWindowStatus]}`}>
                     {DRINK_WINDOW_LABEL[wine.drinkWindowStatus]}{getDrinkWindow(wine).estimated && getDrinkWindow(wine).from ? ' · indicatie' : ''}
+                    {getPersonalDrinkMoment(wine) && <span className="block mt-1 text-gold-300">Voor jouw smaak: {getPersonalDrinkMoment(wine)!.from}{getPersonalDrinkMoment(wine)!.to !== getPersonalDrinkMoment(wine)!.from ? `–${getPersonalDrinkMoment(wine)!.to}` : ''}</span>}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 text-right shrink-0">
