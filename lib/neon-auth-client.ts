@@ -1,9 +1,9 @@
-const AUTH_URL = 'https://ep-lively-violet-bairtio6.neonauth.c-8.eu-central-1.aws.neon.tech/viniq/auth';
+const AUTH_URL = '/api/auth';
 
 async function authRequest(path: string, body?: unknown) {
   const response = await fetch(AUTH_URL + path, {
     method: body ? 'POST' : 'GET',
-    credentials: 'include',
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     ...(body ? { body: JSON.stringify(body) } : {}),
     cache: 'no-store',
