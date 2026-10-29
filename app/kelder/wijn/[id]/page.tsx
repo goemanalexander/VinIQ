@@ -45,7 +45,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
     if (kind !== 'add' && !window.confirm(kind === 'move' ? 'Deze fles verplaatsen?' : 'Deze fles uit de voorraad halen?')) return;
     setBusy(true); setError('');
     try {
-      if (kind === 'add') await addBottleToCellar(params.id, location(position), Number(price || 0), gift);
+      if (kind === 'add') await addBottleToCellar(params.id, location(position), Number(price.trim().replace(',', '.') || 0), gift);
       else if (kind === 'move') await moveCellarBottle(selectedBottle, location(position));
       else await removeCellarBottle(selectedBottle, kind);
       await refresh();
@@ -173,8 +173,8 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
           <div className="border-t border-gold-500/20 pt-3">
             <p className="mb-2 text-sm text-cream-100">Extra fles van deze wijn toevoegen</p>
             <label className="flex items-center gap-2 text-sm text-cream-200"><input type="checkbox" checked={gift} onChange={e => setGift(e.target.checked)} /> Geschenk</label>
-            {!gift && <input type="number" min="0" step="0.01" placeholder="Aankoopprijs per fles (€)" value={price} onChange={e => setPrice(e.target.value)} className="mt-2 w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100" />}
-            <button disabled={busy || (!gift && (!price || Number(price) < 0))} onClick={() => action('add')} className="mt-2 w-full rounded-lg bg-gold-600 p-3 text-sm font-semibold text-navy-950 disabled:opacity-40">+ Fles toevoegen</button>
+            {!gift && <input type="text" inputMode="decimal" autoComplete="off" placeholder="Aankoopprijs per fles (€)" value={price} onChange={e => setPrice(e.target.value)} className="mt-2 w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100" />}
+            <button disabled={busy || (!gift && (!price.trim() || !Number.isFinite(Number(price.trim().replace(',', '.'))) || Number(price.trim().replace(',', '.')) < 0))} onClick={() => action('add')} className="mt-2 w-full rounded-lg bg-gold-600 p-3 text-sm font-semibold text-navy-950 disabled:opacity-40">+ Fles toevoegen</button>
           </div>
           {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
           <p className="text-xs text-cream-300/40">Wijzigingen worden voorlopig alleen op dit toestel opgeslagen.</p>
