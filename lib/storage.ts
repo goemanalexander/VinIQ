@@ -56,6 +56,8 @@ function save() {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
     wines:_wines,bottles:_bottles,acquisitions:_acquisitions,valuations:_valuations,events:_events,
   }));
+  window.localStorage.setItem('viniq-cloud-dirty', '1');
+  window.dispatchEvent(new Event('viniq-cellar-changed'));
 }
 
 // ─── WINES ──────────────────────────────────────────────────────────────────
@@ -395,6 +397,8 @@ export function importCellarSnapshot(snapshot: CellarSnapshot): void {
   _acquisitions = [...snapshot.acquisitions];
   _valuations = [...snapshot.valuations];
   _events = [...snapshot.events];
+  window.localStorage.setItem('viniq-cloud-dirty', '1');
+  window.dispatchEvent(new Event('viniq-cellar-changed'));
 }
 
 /**
@@ -471,6 +475,8 @@ export async function addNewWineToCellar(input: {
   _bottles = next.bottles;
   _acquisitions = next.acquisitions;
   _events = next.events;
+  window.localStorage.setItem('viniq-cloud-dirty', '1');
+  window.dispatchEvent(new Event('viniq-cellar-changed'));
   return wineId;
 }
 
@@ -488,4 +494,6 @@ export async function setWineDrinkWindow(id: string, from?: number, to?: number)
     valuations: _valuations, events: _events,
   }));
   _wines = next;
+  window.localStorage.setItem('viniq-cloud-dirty', '1');
+  window.dispatchEvent(new Event('viniq-cellar-changed'));
 }
