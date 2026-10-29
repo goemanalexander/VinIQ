@@ -209,3 +209,32 @@ test('tasting supports color associations and buttery mouthfeel', async ({ page 
   await expect(page.getByText('Paars', { exact: false }).first()).toBeVisible();
   await expect(page.getByText('Boterig', { exact: false }).first()).toBeVisible();
 });
+
+test('taste profile starts cautiously and learns from three different rated wines', async ({ page }) => {
+  await page.goto('/kelder/vanavond');
+  await expect(page.getByText('Nog te weinig gegevens')).toBeVisible();
+  await page.evaluate(() => {
+    const key = 'viniq-cellar-v1';
+    const snapshot = JSON.parse(localStorage.getItem(key)!);
+    const ids = ['seed-wine-bennati', 'seed-wine-mastieri', 'seed-wine-ritardatario'];
+    for (const wine of snapshot.wines) {
+      if (!ids.includes(wine.id)) continue;
+      wine.notes = [
+        wine.notes || '',
+        'Proefnotitie 29/10/2026 · 9/10',
+        'Hoe lekker vind je deze wijn? Heerlijk',
+        'Hoe zuur smaakt hij? Een beetje',
+        'Welke kleur geef je de smaak? Bordeaux',
+        'Hoe voelt hij in je mond? Boterig',
+        'Zou je hem opnieuw kopen? Zeker!'
+      ].filter(Boolean).join('\\n');
+    }
+    localStorage.setItem(key, JSON.stringify(snapshot));
+  });
+  await page.reload();
+  await expect(page.getByText('Profiel in opbouw')).toBeVisible();
+  await expect(page.getByText('Jouw smaakkleuren: Bordeaux')).toBeVisible();
+  await expect(page.getByText('Mondgevoel dat je waardeert: Boterig')).toBeVisible();
+  await expect(page.getByText('Goed beoordeelde stijlen:', { exact: false })).toBeVisible();
+  await expect(page.getByText('Je gaf eerder een goede score aan', { exact: false }).first()).toBeVisible();
+});
