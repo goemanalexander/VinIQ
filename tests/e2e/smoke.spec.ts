@@ -154,7 +154,7 @@ test('bottle picker shows readable locations without internal IDs', async ({ pag
 test('five tasting questions save rating and append tasting history', async ({ page }) => {
   await page.goto('/kelder/wijn/seed-wine-bennati');
   await page.getByRole('link', { name: 'Vijf proefvragen beantwoorden' }).click();
-  for (let i = 0; i < 5; i++) await page.locator(`#taste-${i}`).selectOption({ index: 1 });
+  for (let i = 0; i < 5; i++) await page.getByRole('group').nth(i).getByRole('button').first().click();
   await page.getByLabel('Mijn score (1–10)').fill('9');
   await page.getByLabel('Extra opmerkingen (optioneel)').fill('Heerlijke wijn');
   await page.getByRole('button', { name: 'Proefnotitie bewaren' }).click();
@@ -164,7 +164,7 @@ test('five tasting questions save rating and append tasting history', async ({ p
   await expect.poll(async () => page.evaluate(() => localStorage.getItem('viniq-cellar-v1')?.includes('Heerlijke wijn'))).toBe(true);
   await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
   await page.getByRole('link', { name: 'Vijf proefvragen beantwoorden' }).click();
-  for (let i = 0; i < 5; i++) await page.locator(`#taste-${i}`).selectOption({ index: 2 });
+  for (let i = 0; i < 5; i++) await page.getByRole('group').nth(i).getByRole('button').nth(1).click();
   await page.getByRole('button', { name: 'Proefnotitie bewaren' }).click();
   await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
 });
@@ -196,4 +196,16 @@ test('only Rek is active on the rack screen', async ({ page }) => {
   await cellar.click();
   await expect(cellar.locator('span.h-0\\.5')).toHaveCount(1);
   await expect(rack.locator('span.h-0\\.5')).toHaveCount(0);
+});
+
+test('tasting supports color associations and buttery mouthfeel', async ({ page }) => {
+  await page.goto('/kelder/wijn/seed-wine-bennati/proeven');
+  await page.getByRole('group', { name: /Hoe lekker/ }).getByRole('button', { name: 'Heerlijk' }).click();
+  await page.getByRole('group', { name: /Hoe zuur/ }).getByRole('button', { name: 'Een beetje' }).click();
+  await page.getByRole('group', { name: /Welke kleur/ }).getByRole('button', { name: 'Paars' }).click();
+  await page.getByRole('group', { name: /Hoe voelt/ }).getByRole('button', { name: 'Boterig' }).click();
+  await page.getByRole('group', { name: /opnieuw kopen/ }).getByRole('button', { name: 'Zeker!' }).click();
+  await page.getByRole('button', { name: 'Proefnotitie bewaren' }).click();
+  await expect(page.getByText('Paars', { exact: false }).first()).toBeVisible();
+  await expect(page.getByText('Boterig', { exact: false }).first()).toBeVisible();
 });
