@@ -25,7 +25,7 @@ export default function BottomNav() {
           const active =
             item.href === '/'
               ? pathname === '/'
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              : pathname === item.href || (item.href !== '/kelder' && pathname.startsWith(`${item.href}/`)) || (item.href === '/kelder' && pathname.startsWith('/kelder/') && !pathname.startsWith('/kelder/rek'));
           const Icon = item.icon;
           return (
             <Link
