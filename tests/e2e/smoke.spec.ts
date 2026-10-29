@@ -185,3 +185,15 @@ test('label upload saves resized image and survives reload', async ({ page }) =>
   await page.reload();
   await expect(page.getByAltText('Etiket van de wijn')).toBeVisible();
 });
+
+test('only Rek is active on the rack screen', async ({ page }) => {
+  await page.goto('/kelder/rek');
+  const nav = page.getByRole('navigation', { name: 'Navigatie' });
+  const rack = nav.getByRole('link', { name: 'Rek' });
+  const cellar = nav.getByRole('link', { name: 'Mijn Kelder' });
+  await expect(rack.locator('span.h-0\\.5')).toHaveCount(1);
+  await expect(cellar.locator('span.h-0\\.5')).toHaveCount(0);
+  await cellar.click();
+  await expect(cellar.locator('span.h-0\\.5')).toHaveCount(1);
+  await expect(rack.locator('span.h-0\\.5')).toHaveCount(0);
+});
