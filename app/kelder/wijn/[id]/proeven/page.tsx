@@ -9,11 +9,11 @@ import type { Wine } from '@/lib/types';
 import { useGuestView } from '@/components/GuestView';
 
 const questions = [
-  { label: '1. Welke smaken proef je?', choices: ['Rijp fruit', 'Rood fruit', 'Kruidig', 'Hout / vanille', 'Bloemig', 'Anders'] },
-  { label: '2. Hoe is de zuurtegraad?', choices: ['Laag', 'Gemiddeld', 'Hoog'] },
-  { label: '3. Hoe voelen de tannines?', choices: ['Zacht', 'Gemiddeld', 'Stroef', 'Niet van toepassing'] },
-  { label: '4. Hoe is het mondgevoel?', choices: ['Licht', 'Rond / boterig', 'Vol / krachtig', 'Fris'] },
-  { label: '5. Zou je deze wijn opnieuw kopen?', choices: ['Ja', 'Misschien', 'Nee'] },
+  { label: '1. Hoe lekker vind je deze wijn?', choices: ['Heerlijk', 'Lekker', 'Gewoon oké', 'Niet mijn ding'] },
+  { label: '2. Hoe zuur smaakt hij?', choices: ['Helemaal niet', 'Een beetje', 'Te zuur'] },
+  { label: '3. Welke kleur geef je de smaak?', choices: ['Rood', 'Oranje', 'Geel', 'Groen', 'Blauw', 'Paars', 'Roze', 'Anders / weet ik niet'] },
+  { label: '4. Hoe voelt hij in je mond?', choices: ['Licht / waterig', 'Zacht / rond', 'Boterig', 'Vol / krachtig', 'Droog / stroef', 'Weet ik niet'] },
+  { label: '5. Zou je hem opnieuw kopen?', choices: ['Zeker!', 'Misschien', 'Nee'] },
 ];
 export default function ProevenPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -43,10 +43,13 @@ export default function ProevenPage({ params }: { params: { id: string } }) {
       <form onSubmit={e => void save(e)} className="space-y-4">
         {questions.map((q, i) => <Card key={i}>
           <label htmlFor={`taste-${i}`} className="mb-2 block text-sm font-medium text-cream-100">{q.label}</label>
-          <select id={`taste-${i}`} required value={answers[i]} onChange={e => setAnswers(old => old.map((v, j) => i === j ? e.target.value : v))} className="w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100">
-            <option value="">Kies een antwoord</option>
-            {q.choices.map(choice => <option key={choice} value={choice}>{choice}</option>)}
-          </select>
+          <div className="flex flex-wrap gap-2" role="group" aria-label={q.label}>
+            {q.choices.map(choice => <button key={choice} type="button" aria-pressed={answers[i] === choice}
+              onClick={() => setAnswers(old => old.map((v, j) => i === j ? choice : v))}
+              className={`rounded-lg border px-3 py-2 text-sm transition-colors ${answers[i] === choice ? 'border-gold-500 bg-gold-500/20 text-gold-300' : 'border-cream-300/20 bg-navy-800 text-cream-300/80'}`}>
+              {choice}
+            </button>)}
+          </div>
         </Card>)}
         <Card>
           <label htmlFor="taste-rating" className="mb-2 block text-sm text-cream-100">Mijn score (1–10)</label>
