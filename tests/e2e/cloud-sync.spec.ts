@@ -51,7 +51,11 @@ test('two independent browser sessions exchange cellar edits through cloud snaps
 test('cloud write conflict is shown and cannot silently overwrite remote data', async ({ page }) => {
   const seed = await page.goto('/kelder');
   expect(seed?.ok()).toBeTruthy();
-  const local = await page.evaluate(() => JSON.parse(localStorage.getItem('viniq-cellar-v1') || '{}'));
+  const local = await page.evaluate(() => {
+    localStorage.removeItem('viniq-cloud-seed');
+    localStorage.setItem('viniq-cloud-dirty', '1');
+    return JSON.parse(localStorage.getItem('viniq-cellar-v1') || '{}');
+  });
   await page.route('**/api/auth/get-session', route =>
     route.fulfill({ json: { user: { id: 'another-user', email: 'another@example.com' } } }));
   await page.route('**/api/cellar', route =>
