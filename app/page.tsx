@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Wine, Grid3X3, Plus } from 'lucide-react';
+import { Wine, Grid3X3, Plus, Clock } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
 import { getCellarSummary, getAllWinesWithCount } from '@/lib/storage';
@@ -93,6 +93,19 @@ export default function DashboardPage() {
               </Card>
             </Link>
           </div>
+        </section>
+
+        <section className="mb-6">
+          <Link href="/kelder/drinkprioriteiten">
+            <Card className="flex items-center gap-3 p-4 transition-transform active:scale-[0.98]">
+              <Clock size={20} className="text-gold-400" />
+              <div>
+                <p className="font-display text-sm text-cream-100">Wat drink ik best eerst?</p>
+                <p className="text-xs text-cream-300/60">Drinkprioriteiten voor jouw kelder</p>
+              </div>
+              <span className="ml-auto text-gold-400">→</span>
+            </Card>
+          </Link>
         </section>
 
         {/* Wine list */}
