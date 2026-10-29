@@ -53,7 +53,7 @@ test('gift adds two bottles, occupies only one rack slot and records history', a
   await page.getByLabel('Positie eerste fles').selectOption('C5');
   await page.getByRole('button', { name: 'Wijn en flessen toevoegen' }).click();
   await expect(page.getByText('×2').first()).toBeVisible();
-  await expect(page.getByText('Rek C5', { exact: true })).toBeVisible();
+  await expect(page.locator('span').getByText('Rek C5', { exact: true })).toBeVisible();
   await expect(page.getByText('Buiten rek', { exact: false }).first()).toBeVisible();
   await expect(page.getByText('Geschenk', { exact: true }).first()).toBeVisible();
   await page.goto('/kelder/rek');
@@ -138,4 +138,15 @@ test('personal drinking recommendation is separate from general window and respe
   await expect(page.getByText('Voor jouw smaak: 2031')).toBeVisible();
   await page.reload();
   await expect(page.getByText('Voor jouw smaak: 2031')).toBeVisible();
+});
+
+test('bottle picker shows readable locations without internal IDs', async ({ page }) => {
+  await page.goto('/kelder/wijn/seed-wine-bennati');
+  const picker = page.locator('select').first();
+  await expect(picker).toBeVisible();
+  const options = await picker.locator('option').allTextContents();
+  expect(options.length).toBeGreaterThan(1);
+  expect(options.some(s => s.startsWith('Rek '))).toBeTruthy();
+  expect(options.some(s => /Buiten rek · fles [12]/.test(s))).toBeTruthy();
+  expect(options.every(s => !/ · [a-z0-9-]{5}$/.test(s))).toBeTruthy();
 });
