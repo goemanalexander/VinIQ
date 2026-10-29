@@ -159,7 +159,9 @@ test('five tasting questions save rating and append tasting history', async ({ p
   await page.getByLabel('Extra opmerkingen (optioneel)').fill('Heerlijke wijn');
   await page.getByRole('button', { name: 'Proefnotitie bewaren' }).click();
   await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => localStorage.getItem('viniq-cellar-v1')?.includes('Heerlijke wijn'))).toBe(true);
   await page.reload();
+  await expect.poll(async () => page.evaluate(() => localStorage.getItem('viniq-cellar-v1')?.includes('Heerlijke wijn'))).toBe(true);
   await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
   await page.getByRole('link', { name: 'Vijf proefvragen beantwoorden' }).click();
   for (let i = 0; i < 5; i++) await page.locator(`#taste-${i}`).selectOption({ index: 2 });
@@ -178,8 +180,7 @@ test('evening recommendations filter own cellar', async ({ page }) => {
 
 test('label upload saves resized image and survives reload', async ({ page }) => {
   await page.goto('/kelder/wijn/seed-wine-bennati');
-  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==', 'base64');
-  await page.locator('input[type=file][accept="image/*"]').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: png });
+  await page.locator('input[type=file][accept="image/*"]').setInputFiles('tests/images/bottle/001-zenato-ripassa-front.jpg');
   await expect(page.getByAltText('Etiket van de wijn')).toBeVisible();
   await page.reload();
   await expect(page.getByAltText('Etiket van de wijn')).toBeVisible();
