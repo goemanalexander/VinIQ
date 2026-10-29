@@ -11,7 +11,7 @@ import { useGuestView } from '@/components/GuestView';
 const questions = [
   { label: '1. Hoe lekker vind je deze wijn?', choices: ['Heerlijk', 'Lekker', 'Gewoon oké', 'Niet mijn ding'] },
   { label: '2. Hoe zuur smaakt hij?', choices: ['Helemaal niet', 'Een beetje', 'Te zuur'] },
-  { label: '3. Welke kleur geef je de smaak?', choices: ['Rood', 'Oranje', 'Geel', 'Groen', 'Blauw', 'Paars', 'Roze', 'Anders / weet ik niet'] },
+  { label: '3. Welke kleur geef je de smaak?', choices: ['Licht rood', 'Donker rood', 'Bordeaux', 'Bruin', 'Oranje', 'Geel', 'Groen', 'Blauw', 'Paars', 'Roze', 'Anders / weet ik niet'] },
   { label: '4. Hoe voelt hij in je mond?', choices: ['Licht / waterig', 'Zacht / rond', 'Boterig', 'Vol / krachtig', 'Droog / stroef', 'Weet ik niet'] },
   { label: '5. Zou je hem opnieuw kopen?', choices: ['Zeker!', 'Misschien', 'Nee'] },
 ];
