@@ -349,10 +349,36 @@ export function importCellarSnapshot(snapshot: CellarSnapshot): void {
       !Array.isArray(snapshot.events)) {
     throw new Error('Ongeldig wijnkelderbestand');
   }
+  // Reject corrupt or ambiguous cloud migrations before touching the local copy.
+  const arrays = [snapshot.wines, snapshot.bottles, snapshot.acquisitions, snapshot.valuations, snapshot.events];
+  if (arrays.some(items => items.length > 100000)) throw new Error('Back-up is te groot');
+  for (const items of arrays) {
+    const ids = new Set<string>();
+    for (const item of items) {
+      if (!item || typeof item !== 'object' || typeof item.id !== 'string' || !item.id.trim() || ids.has(item.id)) {
+        throw new Error('Ongeldige of dubbele record-ID in back-up');
+      }
+      ids.add(item.id);
+    }
+  }
   const wineIds = new Set(snapshot.wines.map(w => w.id));
+  const acquisitionIds = new Set(snapshot.acquisitions.map(a => a.id));
   const occupied = new Set<string>();
+  for (const acquisition of snapshot.acquisitions) {
+    if (!wineIds.has(acquisition.wineId)) throw new Error('Aankoop verwijst naar onbekende wijn');
+  }
+  for (const valuation of snapshot.valuations) {
+    if (!wineIds.has(valuation.wineId)) throw new Error('Waardering verwijst naar onbekende wijn');
+  }
+  for (const event of snapshot.events) {
+    if (!wineIds.has(event.wineId)) throw new Error('Historiek verwijst naar onbekende wijn');
+  }
   for (const bottle of snapshot.bottles) {
     if (!wineIds.has(bottle.wineId)) throw new Error('Fles verwijst naar een onbekende wijn');
+    if (!acquisitionIds.has(bottle.acquisitionId)) throw new Error('Fles verwijst naar een onbekende aankoop');
+    if (!bottle.location || (bottle.location.type !== 'rack' && bottle.location.type !== 'outside')) {
+      throw new Error('Ongeldige fleslocatie');
+    }
     if (bottle.location.type === 'rack') {
       const { row, col } = bottle.location;
       if (!['A','B','C','D'].includes(row) || ![1,2,3,4,5,6].includes(col)) throw new Error('Ongeldige rekpositie');
