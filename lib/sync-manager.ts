@@ -28,6 +28,8 @@ async function runSync(): Promise<CloudStatus> {
   const local = exportLocalCellarSnapshot();
   const localFingerprint = snapshotFingerprint(local);
   const meta = getMeta(user.id);
+  const previous = JSON.parse(localStorage.getItem(META_KEY) || 'null') as CloudState | null;
+  if (previous?.ownerId && previous.ownerId !== user.id) return 'conflict';
   const remote = await fetchRemoteCellar(user.id, '');
 
   if (!remote) {
@@ -82,7 +84,14 @@ export async function resolveCloudConflict(choice: 'local' | 'cloud'): Promise<v
   const user = await currentUser();
   if (!user) throw new Error('Meld je eerst aan');
   const remote = await fetchRemoteCellar(user.id, '');
-  if (!remote) throw new Error('Cloudgegevens niet gevonden');
+  if (!remote) {
+    if (choice === 'cloud') throw new Error('Dit account heeft nog geen cloudkelder');
+    const local = exportLocalCellarSnapshot();
+    const result = await firstUpload(user.id, '', local);
+    if (result.status !== 'uploaded') throw new Error('Cloudkelder werd intussen aangemaakt');
+    confirmSynced(user.id, result.revision, snapshotFingerprint(local));
+    return;
+  }
   if (choice === 'cloud') {
     importCellarSnapshot(remote.payload);
     confirmSynced(user.id, remote.revision, snapshotFingerprint(remote.payload));
