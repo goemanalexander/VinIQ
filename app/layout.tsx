@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
 import ClientInit from '@/components/ClientInit';
+import { GuestViewProvider } from '@/components/GuestView';
 
 export const metadata: Metadata = {
   title: 'VinIQ — Wijnkelderbeheer',
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="nl">
       <body className="font-body antialiased">
         <ClientInit />
-        <div className="mx-auto min-h-screen max-w-md pb-24">{children}</div>
+        <GuestViewProvider><div className="mx-auto min-h-screen max-w-md pb-24">{children}</div></GuestViewProvider>
         <BottomNav />
       </body>
     </html>
