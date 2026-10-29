@@ -9,7 +9,7 @@ import { getAllWinesWithCount, exportLocalCellarSnapshot, importCellarSnapshot, 
 import { DRINK_WINDOW_COLOR, DRINK_WINDOW_LABEL, formatCurrency } from '@/lib/utils';
 import type { WineWithCount } from '@/lib/types';
 import { useGuestView } from '@/components/GuestView';
-import { getDrinkWindow, formatCurrencyExact } from '@/lib/utils';
+import { getDrinkWindow, getPersonalDrinkMoment, formatCurrencyExact } from '@/lib/utils';
 
 export default function KelderPage() {
   const { guest } = useGuestView();
