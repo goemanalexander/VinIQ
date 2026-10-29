@@ -61,3 +61,10 @@ test('cloud write conflict is shown and cannot silently overwrite remote data', 
   await expect(page.getByRole('button', { name: 'Lokale kelder behouden' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Cloudkelder gebruiken' })).toBeVisible();
 });
+
+test('unauthenticated cloud API refuses reads and writes', async ({ request }) => {
+  const read = await request.get('/api/cellar');
+  expect(read.status()).toBe(401);
+  const write = await request.post('/api/cellar', { data: { payload: { wines: [], bottles: [], acquisitions: [], valuations: [], events: [] } } });
+  expect(write.status()).toBe(401);
+});
