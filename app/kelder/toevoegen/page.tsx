@@ -6,11 +6,13 @@ import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
 import { addNewWineToCellar, getRackGrid } from '@/lib/storage';
 import type { RackRow, RackCol, Wine } from '@/lib/types';
+import { useGuestView } from '@/components/GuestView';
 
 const field = 'w-full rounded-xl border border-gold-500/20 bg-navy-800/60 px-4 py-3 text-base text-cream-100 placeholder-cream-300/30 outline-none focus:border-gold-500/50';
 const label = 'mb-1 block text-xs text-cream-300/70';
 
 export default function ToevoegPage() {
+  const { guest } = useGuestView();
   const router = useRouter();
   const [producer, setProducer] = useState('');
   const [wineName, setWineName] = useState('');
@@ -40,7 +42,7 @@ export default function ToevoegPage() {
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy) return;
+    if (busy || guest) return;
     setError('');
     const amount = Number(quantity);
     const parsedPrice = Number(price.trim().replace(',', '.'));
@@ -67,6 +69,8 @@ export default function ToevoegPage() {
       setBusy(false);
     }
   }
+
+  if (guest) return <><PageHeader title="Nieuwe wijn toevoegen" back backHref="/kelder" /><div className="px-5 pt-6"><Card><p className="text-sm text-cream-100">Schakel de gastweergave uit om flessen toe te voegen.</p></Card></div></>;
 
   return (
     <>
