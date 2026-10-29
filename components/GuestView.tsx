@@ -13,7 +13,7 @@ export function useGuestView() {
 }
 
 export function GuestViewProvider({ children }: { children: ReactNode }) {
-  const [guest, setGuestState] = useState(false);
+  const [guest, setGuestState] = useState<boolean | null>(null);
   useEffect(() => {
     try { setGuestState(window.sessionStorage.getItem(KEY) === 'true'); } catch { /* private mode */ }
   }, []);
@@ -21,6 +21,8 @@ export function GuestViewProvider({ children }: { children: ReactNode }) {
     setGuestState(value);
     try { window.sessionStorage.setItem(KEY, String(value)); } catch { /* private mode */ }
   }
+  // Render no private data until this tab's privacy preference has been read.
+  if (guest === null) return null;
   return <GuestContext.Provider value={{ guest, setGuest }}>
     <div className="mx-auto max-w-md px-5 pt-2">
       <button type="button" aria-pressed={guest} aria-label={guest ? 'Gastweergave uitschakelen' : 'Gastweergave inschakelen'}
