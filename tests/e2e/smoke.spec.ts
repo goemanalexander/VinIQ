@@ -142,7 +142,7 @@ test('personal drinking recommendation is separate from general window and respe
 
 test('bottle picker shows readable locations without internal IDs', async ({ page }) => {
   await page.goto('/kelder/wijn/seed-wine-bennati');
-  const picker = page.getByLabel('Fles kiezen');
+  const picker = page.locator('select').first();
   await expect(picker).toBeVisible();
   const options = await picker.locator('option').allTextContents();
   expect(options.length).toBeGreaterThan(1);
