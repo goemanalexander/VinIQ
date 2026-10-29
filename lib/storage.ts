@@ -44,7 +44,11 @@ function ensureLoaded() {
     _acquisitions = snapshot.acquisitions ?? [];
     _valuations = snapshot.valuations ?? [];
     _events = snapshot.events ?? [];
-    if (!raw) save();
+    if (!raw) {
+      save();
+      window.localStorage.setItem('viniq-cloud-seed', '1');
+      window.localStorage.removeItem('viniq-cloud-dirty');
+    }
   } catch (error) {
     // Do not overwrite an unreadable existing snapshot.
     loaded = false;
@@ -56,6 +60,7 @@ function save() {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
     wines:_wines,bottles:_bottles,acquisitions:_acquisitions,valuations:_valuations,events:_events,
   }));
+  window.localStorage.removeItem('viniq-cloud-seed');
   window.localStorage.setItem('viniq-cloud-dirty', '1');
   window.dispatchEvent(new Event('viniq-cellar-changed'));
 }
