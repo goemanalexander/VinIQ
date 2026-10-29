@@ -78,14 +78,12 @@ export default function DashboardPage() {
         {/* Quick actions */}
         <section className="mb-6">
           <div className="grid grid-cols-2 gap-3">
-            {/* Stub: toevoegen is Phase 2 */}
-            <div title="Beschikbaar in fase 2" className="cursor-not-allowed">
-              <Card className="flex flex-col gap-2 p-3.5 opacity-40">
+            <Link href="/kelder/toevoegen">
+              <Card className="flex flex-col gap-2 p-3.5 transition-transform active:scale-[0.98]">
                 <Plus size={18} strokeWidth={1.6} className="text-cream-300/50" />
                 <span className="font-display text-sm text-cream-200">Fles toevoegen</span>
-                <span className="text-[10px] text-cream-300/50 uppercase tracking-wide">Binnenkort</span>
               </Card>
-            </div>
+            </Link>
             <Link href="/kelder/rek">
               <Card className="flex flex-col gap-2 p-3.5 transition-transform active:scale-[0.98]">
                 <Grid3X3 size={18} strokeWidth={1.6} className="text-gold-400/70" />

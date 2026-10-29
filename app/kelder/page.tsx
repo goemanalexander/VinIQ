@@ -88,6 +88,8 @@ export default function KelderPage() {
         <button type="button" onClick={() => backupInput.current?.click()} className="mb-5 ml-2 rounded-lg border border-gold-500/30 px-3 py-2 text-xs text-cream-100 hover:bg-gold-500/10">Back-up herstellen</button>
         {backupMessage && <p role="status" className="mb-4 text-xs text-cream-100">{backupMessage}</p>}
 
+        <Link href="/kelder/toevoegen" className="mb-5 flex items-center justify-center gap-2 rounded-full bg-gold-500 px-4 py-3 text-sm font-semibold text-navy-950"><Plus size={16} /> Nieuwe wijn toevoegen</Link>
+
         {/* Wine list */}
         {filtered.length > 0 ? (
           <Card className="divide-y divide-gold-500/10 p-1">
