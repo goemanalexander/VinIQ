@@ -83,7 +83,7 @@ test('guest view hides prices, totals, backups and edit actions across pages', a
   await expect(page.getByRole('button', { name: 'Download back-up van mijn kelder (JSON)' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Nieuwe wijn toevoegen' })).toHaveCount(0);
   await expect(page.getByText('€/fl.', { exact: false })).toHaveCount(0);
-  await page.locator('a[href^="/kelder/wijn/"]').first().click();
+  await page.goto('/kelder/wijn/seed-wine-bennati');
   await expect(page.getByText('Waarde van je voorraad')).toHaveCount(0);
   await expect(page.getByText('Aankoop/fl.')).toHaveCount(0);
   await expect(page.getByText('Voorraad beheren')).toHaveCount(0);
@@ -95,8 +95,8 @@ test('guest view hides prices, totals, backups and edit actions across pages', a
 
 test('indicative drinking window can be manually edited and survives reload', async ({ page }) => {
   await page.goto('/kelder');
-  await page.getByText('Bennati — Amarone della Valpolicella').first().click();
-  await expect(page.getByText('indicatie', { exact: false })).toBeVisible();
+  await page.goto('/kelder/wijn/seed-wine-bennati');
+  await expect(page.getByText('indicatie', { exact: false }).first()).toBeVisible();
   await page.getByRole('link', { name: 'Aanpassen' }).click();
   await expect(page.getByText('Stijlindicatie:', { exact: false })).toBeVisible();
   await page.getByLabel('Drinken vanaf').fill('2028');
