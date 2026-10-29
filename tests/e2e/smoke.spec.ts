@@ -150,3 +150,37 @@ test('bottle picker shows readable locations without internal IDs', async ({ pag
   expect(options.some(s => /Buiten rek · fles [12]/.test(s))).toBeTruthy();
   expect(options.every(s => !/ · [a-z0-9-]{5}$/.test(s))).toBeTruthy();
 });
+
+test('five tasting questions save rating and append tasting history', async ({ page }) => {
+  await page.goto('/kelder/wijn/seed-wine-bennati');
+  await page.getByRole('link', { name: 'Vijf proefvragen beantwoorden' }).click();
+  for (let i = 0; i < 5; i++) await page.locator(`#taste-${i}`).selectOption({ index: 1 });
+  await page.getByLabel('Mijn score (1–10)').fill('9');
+  await page.getByLabel('Extra opmerkingen (optioneel)').fill('Heerlijke wijn');
+  await page.getByRole('button', { name: 'Proefnotitie bewaren' }).click();
+  await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
+  await page.getByRole('link', { name: 'Vijf proefvragen beantwoorden' }).click();
+  for (let i = 0; i < 5; i++) await page.locator(`#taste-${i}`).selectOption({ index: 2 });
+  await page.getByRole('button', { name: 'Proefnotitie bewaren' }).click();
+  await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
+});
+
+test('evening recommendations filter own cellar', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: /Wat drinken we vanavond/ }).click();
+  await expect(page).toHaveURL(/kelder\/vanavond/);
+  await expect(page.getByText('Suggestie 1')).toBeVisible();
+  await page.getByLabel('Waar heb je zin in?').selectOption('fris');
+  await expect(page.getByText('Suggestie 1')).toBeVisible();
+});
+
+test('label upload saves resized image and survives reload', async ({ page }) => {
+  await page.goto('/kelder/wijn/seed-wine-bennati');
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==', 'base64');
+  await page.locator('input[type=file][accept="image/*"]').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: png });
+  await expect(page.getByAltText('Etiket van de wijn')).toBeVisible();
+  await page.reload();
+  await expect(page.getByAltText('Etiket van de wijn')).toBeVisible();
+});
