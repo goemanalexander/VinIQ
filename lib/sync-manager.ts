@@ -16,6 +16,7 @@ function getMeta(ownerId: string): CloudState | null {
 }
 function confirmSynced(ownerId: string, revision: number, fingerprint: string) {
   localStorage.setItem(META_KEY, JSON.stringify({ ownerId, revision, fingerprint }));
+  localStorage.removeItem('viniq-cloud-seed');
   if (snapshotFingerprint(exportLocalCellarSnapshot()) === fingerprint) {
     localStorage.removeItem(DIRTY_KEY);
   }
@@ -38,6 +39,14 @@ async function runSync(): Promise<CloudStatus> {
   const remoteFingerprint = snapshotFingerprint(remote.payload);
   if (remoteFingerprint === localFingerprint) {
     confirmSynced(user.id, remote.revision, localFingerprint);
+    return 'synced';
+  }
+  // A freshly installed untouched demo cellar is not user data: load the real cloud copy.
+  if (!meta && localStorage.getItem('viniq-cloud-seed') === '1') {
+    if (snapshotFingerprint(exportLocalCellarSnapshot()) !== localFingerprint) return 'conflict';
+    importCellarSnapshot(remote.payload);
+    confirmSynced(user.id, remote.revision, remoteFingerprint);
+    window.dispatchEvent(new Event('viniq-cloud-updated'));
     return 'synced';
   }
   // Without a common ancestor, never guess which inventory is authoritative.
