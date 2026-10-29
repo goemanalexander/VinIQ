@@ -316,3 +316,56 @@ export async function removeCellarBottle(bottleId: string, reason: 'drank' | 'gi
   _events = [..._events, { id: genId('evt'), wineId: bottle.wineId, bottleId, type: reason, fromLocation: bottle.location, timestamp: new Date().toISOString() }];
   save();
 }
+
+
+// ─── CLOUD MIGRATION PREPARATION ─────────────────────────────────────────────
+// Local data remains the source of truth until authenticated cloud sync is enabled.
+// Never silently replace an existing browser cellar with server seed data.
+
+export type CellarSnapshot = {
+  wines: Wine[];
+  bottles: Bottle[];
+  acquisitions: Acquisition[];
+  valuations: MarketValuation[];
+  events: BottleEvent[];
+};
+
+export function exportLocalCellarSnapshot(): CellarSnapshot {
+  ensureLoaded();
+  return {
+    wines: [..._wines],
+    bottles: [..._bottles],
+    acquisitions: [..._acquisitions],
+    valuations: [..._valuations],
+    events: [..._events],
+  };
+}
+
+/** Explicit import only. Validate references and rack collisions before touching storage. */
+export function importCellarSnapshot(snapshot: CellarSnapshot): void {
+  ensureLoaded();
+  if (!snapshot || !Array.isArray(snapshot.wines) || !Array.isArray(snapshot.bottles) ||
+      !Array.isArray(snapshot.acquisitions) || !Array.isArray(snapshot.valuations) ||
+      !Array.isArray(snapshot.events)) {
+    throw new Error('Ongeldig wijnkelderbestand');
+  }
+  const wineIds = new Set(snapshot.wines.map(w => w.id));
+  const occupied = new Set<string>();
+  for (const bottle of snapshot.bottles) {
+    if (!wineIds.has(bottle.wineId)) throw new Error('Fles verwijst naar een onbekende wijn');
+    if (bottle.location.type === 'rack') {
+      const { row, col } = bottle.location;
+      if (!['A','B','C','D'].includes(row) || ![1,2,3,4,5,6].includes(col)) throw new Error('Ongeldige rekpositie');
+      const key = `${row}${col}`;
+      if (occupied.has(key)) throw new Error('Dubbele rekpositie: ' + key);
+      occupied.add(key);
+    }
+  }
+  // Persist atomically to browser storage before switching in-memory state.
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  _wines = [...snapshot.wines];
+  _bottles = [...snapshot.bottles];
+  _acquisitions = [...snapshot.acquisitions];
+  _valuations = [...snapshot.valuations];
+  _events = [...snapshot.events];
+}
