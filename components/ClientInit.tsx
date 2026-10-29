@@ -14,6 +14,8 @@ export default function ClientInit() {
       }
     }
     const onVisibility = () => { if (document.visibilityState === 'visible') void run(); };
+    const onCloudUpdated = () => { window.location.reload(); };
+    window.addEventListener('viniq-cloud-updated', onCloudUpdated);
     const onStorage = (event: StorageEvent) => { if (event.key === 'viniq-cellar-v1') void run(); };
     window.addEventListener('viniq-cellar-changed', run);
     window.addEventListener('online', run);
@@ -28,6 +30,7 @@ export default function ClientInit() {
       window.removeEventListener('online', run);
       window.removeEventListener('focus', run);
       window.removeEventListener('storage', onStorage);
+      window.removeEventListener('viniq-cloud-updated', onCloudUpdated);
       document.removeEventListener('visibilitychange', onVisibility);
       window.clearInterval(interval);
     };
