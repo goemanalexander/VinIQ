@@ -201,7 +201,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
             <button disabled={busy || (!gift && (!price.trim() || !Number.isFinite(Number(price.trim().replace(',', '.'))) || Number(price.trim().replace(',', '.')) < 0))} onClick={() => action('add')} className="mt-2 w-full rounded-lg bg-gold-600 p-3 text-sm font-semibold text-navy-950 disabled:opacity-40">+ Fles toevoegen</button>
           </div>
           {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
-          <p className="text-xs text-cream-300/40">Wijzigingen worden voorlopig alleen op dit toestel opgeslagen.</p>
+          <p className="text-xs text-cream-300/40">Wijzigingen worden lokaal bewaard en na aanmelding gesynchroniseerd via de cloud.</p>
         </Card>}
       </div>
     </>
