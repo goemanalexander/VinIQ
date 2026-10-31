@@ -55,7 +55,8 @@ export default function RekPage() {
         {/* Rack grid */}
         <Card className="mb-6 p-3">
           {/* Column headers */}
-          <div className="mb-2 grid grid-cols-7 gap-1.5 pl-8">
+          <div className="mb-2 grid grid-cols-7 gap-1.5">
+            <div aria-hidden="true" />
             {COLS.map(col => (
               <div key={col} className="text-center text-[10px] text-cream-300/30 font-medium">
                 {col}
