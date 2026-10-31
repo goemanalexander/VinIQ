@@ -70,8 +70,6 @@ export default function KelderPage() {
       <PageHeader title="Mijn Kelder" subtitle={`${totalBottles} fles${totalBottles !== 1 ? 'sen' : ''}`} />
       <div className="px-5 pb-8 pt-4">
 
-        {!guest && <CloudSyncPanel />}
-
         {/* Search */}
         <div className="relative mb-3">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-cream-300/40" />
@@ -139,6 +137,9 @@ export default function KelderPage() {
             <p className="text-sm text-cream-300/60">Geen resultaten voor &ldquo;{query}&rdquo;</p>
           </Card>
         )}
+
+        {/* Sync controls stay accessible without pushing the cellar inventory down. */}
+        {!guest && <div className="mt-8"><CloudSyncPanel /></div>}
       </div>
     </>
   );
