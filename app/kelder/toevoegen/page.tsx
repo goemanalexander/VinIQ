@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
 import { addNewWineToCellar, getRackGrid } from '@/lib/storage';
@@ -75,6 +76,11 @@ export default function ToevoegPage() {
   return (
     <>
       <PageHeader title="Nieuwe wijn toevoegen" back backHref="/kelder" />
+      <div className="px-5 pt-5">
+        <Link href="/kelder" className="block rounded-xl border border-gold-500/30 bg-gold-500/10 p-4 text-sm text-gold-300">
+          Staat deze wijn al in je kelder? Zoek hem op en voeg meteen meerdere flessen toe.
+        </Link>
+      </div>
       <form onSubmit={submit} className="space-y-4 px-5 pb-28 pt-5">
         <Card className="space-y-4">
           <p className="font-display text-lg text-cream-100">Welke wijn?</p>
