@@ -138,7 +138,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
               {t.extra && <p className="mt-1 text-xs italic text-cream-300/70">{t.extra}</p>}
             </div>)}
           </div>
-        </Card>
+        </Card>}
 
         {/* Value card */}
         {!guest && <Card>
