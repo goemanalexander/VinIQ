@@ -47,12 +47,14 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
   async function action(kind: 'add'|'move'|'drank'|'gifted_away') {
     if (busy || guest) return;
     if (kind !== 'add' && !selectedBottle) return;
+    if (kind === 'add' && (!Number.isInteger(Number(quantity)) || Number(quantity) < 1 || Number(quantity) > 99)) { setError('Aantal moet tussen 1 en 99 liggen'); return; }
     if (kind !== 'add' && !window.confirm(kind === 'move' ? 'Deze fles verplaatsen?' : 'Deze fles uit de voorraad halen?')) return;
     setBusy(true); setError('');
     try {
       if (kind === 'add') await addBottleToCellar(params.id, location(position), Number(price.trim().replace(',', '.') || 0), gift, Number(quantity));
       else if (kind === 'move') await moveCellarBottle(selectedBottle, location(position));
       else await removeCellarBottle(selectedBottle, kind);
+      if (kind === 'add') setQuantity('1');
       await refresh();
     } catch (e) { setError(e instanceof Error ? e.message : 'Er ging iets mis'); }
     finally { setBusy(false); }
@@ -201,7 +203,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
             <input id="add-quantity" type="number" inputMode="numeric" min="1" max="99" step="1" value={quantity} onChange={e => setQuantity(e.target.value)} className="mt-1 w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100" />
             <label className="flex items-center gap-2 text-sm text-cream-200"><input type="checkbox" checked={gift} onChange={e => setGift(e.target.checked)} /> Geschenk</label>
             {!gift && <input type="text" inputMode="decimal" autoComplete="off" placeholder="Aankoopprijs per fles (€)" value={price} onChange={e => setPrice(e.target.value)} className="mt-2 w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100" />}
-            <button disabled={busy || (!gift && (!price.trim() || !Number.isFinite(Number(price.trim().replace(',', '.'))) || Number(price.trim().replace(',', '.')) < 0))} onClick={() => action('add')} className="mt-2 w-full rounded-lg bg-gold-600 p-3 text-sm font-semibold text-navy-950 disabled:opacity-40">+ Fles toevoegen</button>
+            <button disabled={busy || !Number.isInteger(Number(quantity)) || Number(quantity) < 1 || Number(quantity) > 99 || (!gift && (!price.trim() || !Number.isFinite(Number(price.trim().replace(',', '.'))) || Number(price.trim().replace(',', '.')) < 0))} onClick={() => action('add')} className="mt-2 w-full rounded-lg bg-gold-600 p-3 text-sm font-semibold text-navy-950 disabled:opacity-40">+ {Number(quantity) === 1 ? 'Fles' : 'Flessen'} toevoegen</button>
           </div>
           {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
           <p className="text-xs text-cream-300/40">Wijzigingen worden lokaal bewaard en na aanmelding gesynchroniseerd via de cloud.</p>
