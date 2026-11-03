@@ -14,6 +14,7 @@ import {
 import type { WineWithCount, Bottle, Acquisition } from '@/lib/types';
 import { useGuestView } from '@/components/GuestView';
 import { getDrinkWindow, getPersonalDrinkMoment } from '@/lib/utils';
+import { extractTastings } from '@/lib/taste-profile';
 
 const COLOR_NL: Record<string, string> = {
   red: 'Rood', white: 'Wit', rosé: 'Rosé', sparkling: 'Mousseux', other: 'Overig',
@@ -65,6 +66,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
   if (!wine) return null;
 
   const personalMoment = getPersonalDrinkMoment(wine);
+  const tastings = extractTastings(wine);
   const locationCounts = new Map<string, number>();
   const bottleLabels = bottles.map(b => {
     const name = formatLocation(b.location);
