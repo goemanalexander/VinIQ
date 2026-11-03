@@ -143,7 +143,7 @@ export default function ToevoegPage() {
         <button type="submit" disabled={busy} className="w-full rounded-full bg-gold-500 px-5 py-3.5 text-sm font-semibold text-navy-950 disabled:opacity-40">
           {busy ? 'Opslaan…' : 'Wijn en flessen toevoegen'}
         </button>
-        <p className="text-center text-xs text-cream-300/50">Wordt voorlopig alleen op dit toestel opgeslagen.</p>
+        <p className="text-center text-xs text-cream-300/50">Wordt op dit toestel bewaard en na aanmelding via de cloud gesynchroniseerd.</p>
       </form>
     </>
   );
