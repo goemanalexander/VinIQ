@@ -23,6 +23,12 @@ export function rankDrinkingPriorities(wines: WineWithCount[], year = new Date()
     } else if (deadline !== undefined && deadline <= year + 1 && (!window.from || window.from <= year)) {
       urgency = 'urgent';
       reason = `Drinkvenster loopt ${deadline === year ? 'dit jaar' : 'volgend jaar'} af.`;
+    } else if (personal && personal.to < year && window.to !== undefined && year <= window.to) {
+      urgency = 'urgent';
+      reason = `Jouw voorkeursperiode eindigde in ${personal.to}. De wijn kan nog goed zijn, maar proef hem binnenkort.`;
+    } else if (personal && personal.from > year && window.from !== undefined && window.from <= year) {
+      urgency = 'later';
+      reason = `Al drinkbaar, maar voor jouw voorkeur voor zachte tannines liever vanaf ${personal.from}.`;
     } else if (window.from !== undefined && window.from > year) {
       urgency = 'later';
       reason = `Bewaar bij voorkeur tot ${window.from}.`;
