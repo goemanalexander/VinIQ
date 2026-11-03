@@ -9,8 +9,8 @@ import { rankDrinkingPriorities, type DrinkingPriority } from '@/lib/drinking-pr
 
 const labels = {
   urgent: 'Eerst drinken',
-  now: 'Nu drinkbaar',
-  later: 'Nog bewaren',
+  now: 'Nu drinken',
+  later: 'Nog laten rijpen',
   unknown: 'Onbekend',
 } as const;
 
@@ -22,9 +22,9 @@ export default function DrinkprioriteitenPage() {
   }, []);
   return (
     <>
-      <PageHeader title="Drinkprioriteiten" back backHref="/kelder" />
+      <PageHeader title="Rijpheid & drinkadvies" back backHref="/kelder" />
       <div className="px-5 pt-5 pb-8">
-        <p className="mb-5 text-sm text-cream-300/70">Welke flessen verdienen eerst aandacht? Op basis van je actuele voorraad en drinkvensters. Dit zijn indicaties, geen garanties.</p>
+        <p className="mb-5 text-sm text-cream-300/70">Welke flessen drink je best nu en welke laat je nog rijpen? We houden rekening met je voorkeur voor rijp fruit en zachte tannines. De drinkvensters zijn schattingen tenzij je ze zelf hebt ingesteld; de toestand van een individuele fles kunnen we niet voorspellen.</p>
         {loading && <p className="text-sm text-cream-300/60">Je kelder wordt bekeken…</p>}
         {!loading && items.length === 0 && <Card><p className="text-sm text-cream-200">Geen flessen in voorraad.</p></Card>}
         {(['urgent','now','later','unknown'] as const).map(group => {
