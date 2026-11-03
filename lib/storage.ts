@@ -280,22 +280,30 @@ export async function getKnownRetailers(): Promise<string[]> {
 }
 
 /** Safe inventory mutations. Bottle stock and event history are updated together. */
-export async function addBottleToCellar(wineId: string, location: Bottle['location'], pricePerBottle: number, gift: boolean): Promise<void> {
+export async function addBottleToCellar(wineId: string, location: Bottle['location'], pricePerBottle: number, gift: boolean, quantity = 1): Promise<void> {
   ensureLoaded();
   if (!_wines.some(w => w.id === wineId)) throw new Error('Wijn niet gevonden');
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) throw new Error('Aantal moet tussen 1 en 99 liggen');
   if (!Number.isFinite(pricePerBottle) || pricePerBottle < 0) throw new Error('Ongeldige prijs');
   assertFreeLocation(location);
   const now = new Date().toISOString();
   const acquisitionId = genId('acq');
-  const bottleId = genId('bottle');
-  _acquisitions = [..._acquisitions, { id: acquisitionId, wineId, type: gift ? 'gift' : 'purchased', quantity: 1, pricePerBottle: gift ? 0 : pricePerBottle, date: now.slice(0,10), createdAt: now }];
-  _bottles = [..._bottles, { id: bottleId, wineId, acquisitionId, location, addedAt: now }];
-  _events = [..._events, { id: genId('evt'), wineId, bottleId, type: gift ? 'received_gift' : 'purchased', toLocation: location, timestamp: now }];
-  const paid = _acquisitions.filter(a => a.wineId === wineId && a.type === 'purchased');
-  const total = paid.reduce((s,a) => s + a.quantity,0);
-  const avg = total ? paid.reduce((s,a) => s + a.quantity*a.pricePerBottle,0)/total : 0;
-  _wines = _wines.map(w => w.id === wineId ? { ...w, avgPurchasePrice: avg } : w);
-  save();
+  const unitPrice = gift ? 0 : pricePerBottle;
+  const acquisition: Acquisition = { id: acquisitionId, wineId, type: gift ? 'gift' : 'purchased', quantity, pricePerBottle: unitPrice, date: now.slice(0,10), createdAt: now };
+  const bottles: Bottle[] = Array.from({ length: quantity }, (_, i) => ({
+    id: genId('bottle'), wineId, acquisitionId, location: i === 0 ? location : { type: 'outside' as const }, addedAt: now,
+  }));
+  const events: BottleEvent[] = bottles.map(b => ({ id: genId('evt'), wineId, bottleId: b.id, type: gift ? 'received_gift' : 'purchased', toLocation: b.location, timestamp: now }));
+  const acquisitions = [..._acquisitions, acquisition];
+  const paid = acquisitions.filter(a => a.wineId === wineId && a.type === 'purchased');
+  const total = paid.reduce((sum,a) => sum + a.quantity, 0);
+  const avg = total ? paid.reduce((sum,a) => sum + a.quantity * a.pricePerBottle, 0) / total : 0;
+  const wines = _wines.map(w => w.id === wineId ? { ...w, avgPurchasePrice: avg } : w);
+  const next = { wines, bottles: [..._bottles, ...bottles], acquisitions, valuations: _valuations, events: [..._events, ...events] };
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  _wines = next.wines; _bottles = next.bottles; _acquisitions = next.acquisitions; _events = next.events;
+  window.localStorage.setItem('viniq-cloud-dirty', '1');
+  window.dispatchEvent(new Event('viniq-cellar-changed'));
 }
 
 function assertFreeLocation(location: Bottle['location'], excludeBottleId?: string) {
