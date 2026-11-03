@@ -195,7 +195,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
           </select>
           <button disabled={busy || !selectedBottle} onClick={() => action('move')} className="w-full rounded-lg border border-gold-500/30 p-3 text-sm text-cream-100 disabled:opacity-40">Fles verplaatsen</button>
           <div className="border-t border-gold-500/20 pt-3">
-            <p className="mb-2 text-sm text-cream-100">Extra fles van deze wijn toevoegen</p>
+            <p className="mb-2 text-sm text-cream-100">Extra flessen van deze wijn toevoegen</p>
             <label className="flex items-center gap-2 text-sm text-cream-200"><input type="checkbox" checked={gift} onChange={e => setGift(e.target.checked)} /> Geschenk</label>
             {!gift && <input type="text" inputMode="decimal" autoComplete="off" placeholder="Aankoopprijs per fles (€)" value={price} onChange={e => setPrice(e.target.value)} className="mt-2 w-full rounded-lg bg-navy-800 p-3 text-sm text-cream-100" />}
             <button disabled={busy || (!gift && (!price.trim() || !Number.isFinite(Number(price.trim().replace(',', '.'))) || Number(price.trim().replace(',', '.')) < 0))} onClick={() => action('add')} className="mt-2 w-full rounded-lg bg-gold-600 p-3 text-sm font-semibold text-navy-950 disabled:opacity-40">+ Fles toevoegen</button>
