@@ -29,7 +29,7 @@ export function wineStyles(wine: Pick<WineWithCount, 'wineName' | 'appellation' 
   return STYLE_RULES.filter(([, re]) => re.test(text)).map(([label]) => label);
 }
 
-export type Tasting = { wineId: string; score: number; color?: string; texture?: string; acidity?: string; repurchase?: string };
+export type Tasting = { wineId: string; score: number; date?: string; color?: string; texture?: string; acidity?: string; repurchase?: string; extra?: string };
 
 export function extractTastings(wine: Pick<WineWithCount, 'id' | 'notes'>): Tasting[] {
   const chunks = (wine.notes ?? '').split(/(?=Proefnotitie\s+\d{1,2}\/\d{1,2}\/\d{4}\s*·)/);
@@ -40,6 +40,8 @@ export function extractTastings(wine: Pick<WineWithCount, 'id' | 'notes'>): Tast
     return [{
       wineId: wine.id,
       score: Number(header[1]),
+      date: chunk.match(/^Proefnotitie\s+(\d{1,2}\/\d{1,2}\/\d{4})/)?.[1],
+      extra: value('Extra:'),
       color: value('Welke kleur geef je de smaak?'),
       texture: value('Hoe voelt hij in je mond?'),
       acidity: value('Hoe zuur smaakt hij?'),
