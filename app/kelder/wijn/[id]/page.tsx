@@ -30,6 +30,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
   const [selectedBottle, setSelectedBottle] = useState('');
   const [position, setPosition] = useState('outside');
   const [price, setPrice] = useState('');
+  const [quantity, setQuantity] = useState('1');
   const [gift, setGift] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
