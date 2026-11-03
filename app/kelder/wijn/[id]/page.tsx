@@ -125,6 +125,21 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
         {guest && wine.imageUrl && <Card><img src={wine.imageUrl} alt="Wijnetiket" className="max-h-64 w-full object-contain" /></Card>}
         {!guest && <Link href={`/kelder/wijn/${params.id}/proeven`} className="block rounded-xl bg-gold-500 px-4 py-3 text-center text-sm font-semibold text-navy-950">🍷 Vijf proefvragen beantwoorden</Link>}
 
+        {tastings.length > 0 && <Card>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gold-300">Mijn proefhistoriek ({tastings.length})</p>
+          <div className="divide-y divide-gold-500/10">
+            {tastings.slice().reverse().map((t, i) => <div key={i} className="py-2 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-cream-300/60">{t.date ?? 'Proeverij'}</span>
+                <span className="font-semibold text-gold-300">{t.score}/10</span>
+              </div>
+              <p className="mt-1 text-cream-200">{[t.color, t.texture, t.acidity].filter(Boolean).join(' · ')}</p>
+              {t.repurchase && <p className="mt-1 text-xs text-cream-300/60">Opnieuw kopen: {t.repurchase}</p>}
+              {t.extra && <p className="mt-1 text-xs italic text-cream-300/70">{t.extra}</p>}
+            </div>)}
+          </div>
+        </Card>
+
         {/* Value card */}
         {!guest && <Card>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gold-300">Waarde van je voorraad</p>
