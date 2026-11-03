@@ -158,15 +158,15 @@ test('five tasting questions save rating and append tasting history', async ({ p
   await page.getByLabel('Mijn score (1–10)').fill('9');
   await page.getByLabel('Extra opmerkingen (optioneel)').fill('Heerlijke wijn');
   await page.getByRole('button', { name: 'Proefnotitie bewaren' }).click();
-  await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
+  await expect(page.getByText('Heerlijke wijn', { exact: false }).first()).toBeVisible();
   await expect.poll(async () => page.evaluate(() => localStorage.getItem('viniq-cellar-v1')?.includes('Heerlijke wijn'))).toBe(true);
   await page.reload();
   await expect.poll(async () => page.evaluate(() => localStorage.getItem('viniq-cellar-v1')?.includes('Heerlijke wijn'))).toBe(true);
-  await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
+  await expect(page.getByText('Heerlijke wijn', { exact: false }).first()).toBeVisible();
   await page.getByRole('link', { name: 'Vijf proefvragen beantwoorden' }).click();
   for (let i = 0; i < 5; i++) await page.getByRole('group').nth(i).getByRole('button').nth(1).click();
   await page.getByRole('button', { name: 'Proefnotitie bewaren' }).click();
-  await expect(page.getByText('Heerlijke wijn', { exact: false })).toBeVisible();
+  await expect(page.getByText('Heerlijke wijn', { exact: false }).first()).toBeVisible();
 });
 
 test('evening recommendations filter own cellar', async ({ page }) => {
@@ -237,4 +237,32 @@ test('taste profile starts cautiously and learns from three different rated wine
   await expect(page.getByText('Mondgevoel dat je waardeert: Boterig')).toBeVisible();
   await expect(page.getByText('Goed beoordeelde stijlen:', { exact: false })).toBeVisible();
   await expect(page.getByText('Je gaf eerder een goede score aan', { exact: false }).first()).toBeVisible();
+});
+
+test('existing wine bulk purchase records one batch and individual bottles', async ({ page }) => {
+  await page.goto('/kelder/wijn/seed-wine-bennati');
+  await page.getByLabel('Aantal flessen').fill('3');
+  await page.getByPlaceholder('Aankoopprijs per fles (€)').fill('19,10');
+  await page.getByRole('button', { name: '+ Flessen toevoegen' }).click();
+  await expect(page.getByText('×9').first()).toBeVisible();
+  await expect(page.getByText('× 3', { exact: false }).first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('×9').first()).toBeVisible();
+  const data = await page.evaluate(() => JSON.parse(localStorage.getItem('viniq-cellar-v1')!));
+  const latest = data.acquisitions.filter((a: {wineId: string; quantity: number}) => a.wineId === 'seed-wine-bennati' && a.quantity === 3);
+  expect(latest).toHaveLength(1);
+  expect(data.bottles.filter((b: {acquisitionId: string}) => b.acquisitionId === latest[0].id)).toHaveLength(3);
+  expect(data.events.filter((e: {bottleId: string}) => data.bottles.some((b: {id: string; acquisitionId: string}) => b.acquisitionId === latest[0].id && b.id === e.bottleId))).toHaveLength(3);
+});
+
+test('tasting history displays dated score and optional comment', async ({ page }) => {
+  await page.goto('/kelder/wijn/seed-wine-bennati/proeven');
+  for (let i = 0; i < 5; i++) await page.getByRole('group').nth(i).getByRole('button').first().click();
+  await page.getByLabel('Mijn score (1–10)').fill('9');
+  await page.getByLabel('Extra opmerkingen (optioneel)').fill('Zacht en aangenaam');
+  await page.getByRole('button', { name: 'Proefnotitie bewaren' }).click();
+  await expect(page.getByText('Mijn proefhistoriek (1)')).toBeVisible();
+  await expect(page.getByText('Zacht en aangenaam', { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Mijn proefhistoriek (1)')).toBeVisible();
 });
