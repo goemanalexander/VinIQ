@@ -278,7 +278,7 @@ test('maturity advice uses preferred period without changing cellar stock', asyn
   await page.getByLabel('Drinken tot').fill(String(year + 8));
   await page.getByRole('button', { name: 'Drinkvenster opslaan' }).click();
   await page.goto('/kelder/drinkprioriteiten');
-  await expect(page.getByText('Al drinkbaar, maar voor jouw voorkeur', { exact: false })).toBeVisible();
+  await expect(page.getByText('Al drinkbaar, maar voor jouw voorkeur', { exact: false }).first()).toBeVisible();
   const countAfter = await page.evaluate(() => JSON.parse(localStorage.getItem('viniq-cellar-v1')!).bottles.length);
   expect(countAfter).toBe(countBefore);
 });
