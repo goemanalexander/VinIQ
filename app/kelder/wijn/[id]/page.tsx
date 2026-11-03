@@ -50,7 +50,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
     if (kind !== 'add' && !window.confirm(kind === 'move' ? 'Deze fles verplaatsen?' : 'Deze fles uit de voorraad halen?')) return;
     setBusy(true); setError('');
     try {
-      if (kind === 'add') await addBottleToCellar(params.id, location(position), Number(price.trim().replace(',', '.') || 0), gift);
+      if (kind === 'add') await addBottleToCellar(params.id, location(position), Number(price.trim().replace(',', '.') || 0), gift, Number(quantity));
       else if (kind === 'move') await moveCellarBottle(selectedBottle, location(position));
       else await removeCellarBottle(selectedBottle, kind);
       await refresh();
