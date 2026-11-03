@@ -266,3 +266,19 @@ test('tasting history displays dated score and optional comment', async ({ page 
   await page.reload();
   await expect(page.getByText('Mijn proefhistoriek (1)')).toBeVisible();
 });
+
+test('maturity advice uses preferred period without changing cellar stock', async ({ page }) => {
+  await page.goto('/kelder/drinkprioriteiten');
+  await expect(page.getByText('Rijpheid & drinkadvies')).toBeVisible();
+  await expect(page.getByText('drinkvensters zijn schattingen', { exact: false })).toBeVisible();
+  const countBefore = await page.evaluate(() => JSON.parse(localStorage.getItem('viniq-cellar-v1')!).bottles.length);
+  await page.goto('/kelder/wijn/seed-wine-bennati/bewerken');
+  const year = new Date().getFullYear();
+  await page.getByLabel('Drinken vanaf').fill(String(year));
+  await page.getByLabel('Drinken tot').fill(String(year + 8));
+  await page.getByRole('button', { name: 'Drinkvenster opslaan' }).click();
+  await page.goto('/kelder/drinkprioriteiten');
+  await expect(page.getByText('Al drinkbaar, maar voor jouw voorkeur', { exact: false })).toBeVisible();
+  const countAfter = await page.evaluate(() => JSON.parse(localStorage.getItem('viniq-cellar-v1')!).bottles.length);
+  expect(countAfter).toBe(countBefore);
+});
