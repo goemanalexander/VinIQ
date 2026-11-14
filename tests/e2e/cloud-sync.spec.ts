@@ -40,7 +40,7 @@ test('two independent browser sessions exchange cellar edits through cloud snaps
     await a.getByRole('button', { name: '+ Fles toevoegen' }).click();
     await expect.poll(() => remote?.revision ?? 0).toBe(2);
     await b.goto('/kelder');
-    await expect.poll(async () => b.evaluate(() => JSON.parse(localStorage.getItem('viniq-cellar-v1') || '{}').bottles?.length)).toBe(34);
+    await expect.poll(async () => b.evaluate(() => JSON.parse(localStorage.getItem('viniq-cellar-v1') || '{}').bottles?.length)).toBe(35);
     expect(uploads).toBe(2);
   } finally {
     await first.close();
