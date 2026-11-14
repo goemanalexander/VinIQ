@@ -47,9 +47,12 @@ export default function DashboardPage() {
                 <p className="mt-1 text-[10px] uppercase tracking-wide text-cream-300/50">Aankoopwaarde</p>
               </Card>
               <Card className="text-center py-4">
-                <p className="font-display text-2xl text-gold-300">{formatCurrency(summary.marketValue)}</p>
+                <p className="font-display text-2xl text-gold-300">{summary.valuedBottles === 0 ? 'Onbekend' : formatCurrency(summary.marketValue)}</p>
                 <p className="mt-1 text-[10px] uppercase tracking-wide text-cream-300/50">Marktwaarde</p>
-                {summary.valueDifference !== 0 && (
+                {summary.valuedBottles > 0 && summary.valuedBottles < summary.totalBottles && (
+                  <p className="mt-1 text-xs text-cream-300/60">{summary.valuedBottles} van {summary.totalBottles} flessen gewaardeerd</p>
+                )}
+                {summary.valuedBottles === summary.totalBottles && summary.valueDifference !== 0 && (
                   <p className={`mt-1 text-xs ${summary.valueDifference > 0 ? 'text-green-400' : 'text-burgundy-400'}`}>
                     {summary.valueDifference > 0 ? '+' : ''}{formatCurrency(summary.valueDifference)}
                   </p>
