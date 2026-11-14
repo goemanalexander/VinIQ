@@ -119,6 +119,7 @@ export interface BottleEvent {
   fromLocation?: BottleLocation;
   toLocation?: BottleLocation;
   note?: string;
+  previousBottle?: Bottle;          // Audit record for a bottle removed by inventory correction
   timestamp: string;                // ISO timestamp
 }
 

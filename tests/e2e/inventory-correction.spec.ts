@@ -51,7 +51,7 @@ test('correction preserves personal data and ledger while reconciling every offi
   expect(next.bottles.map(locationKey).sort()).toEqual(makeInitialCellar().bottles.map(locationKey).sort());
   expect(next.events.slice(source.events.length).every(e => e.type === 'inventory_correction')).toBe(true);
   for (const removed of source.bottles.filter(b => !next.bottles.some(n => n.id === b.id))) {
-    expect(next.events.some(e => e.bottleId === removed.id && e.note?.includes(JSON.stringify(removed)))).toBe(true);
+    expect(next.events.find(e => e.bottleId === removed.id && e.previousBottle)?.previousBottle).toEqual(removed);
   }
   expect(next.acquisitions.filter(a => a.id.startsWith(OFFICIAL_INVENTORY_CORRECTION)).every(a => a.date === '')).toBe(true);
   expect(next.wines.reduce((sum, w) => sum + w.avgPurchasePrice * next.bottles.filter(b => b.wineId === w.id).length, 0)).toBeCloseTo(362.76);

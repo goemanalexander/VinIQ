@@ -79,7 +79,7 @@ export function correctOfficialInventory(source: CellarSnapshot, timestamp: stri
   for (const surplus of source.bottles.filter(b => !consumed.has(b.id))) {
     // Retain the entire removed record in the immutable ledger for audit/rollback.
     record(surplus, surplus.location);
-    events[events.length - 1].note += '\nOorspronkelijk flesrecord: ' + JSON.stringify(surplus);
+    events[events.length - 1].previousBottle = structuredClone(surplus);
   }
   // Mark even a stock-identical correction: later consumption must never be reset.
   if (!events.length) record(bottles[0], bottles[0].location, bottles[0].location);
