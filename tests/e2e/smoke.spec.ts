@@ -300,3 +300,12 @@ test('official inventory has 34 individually located bottles and no invented pur
   expect(snapshot.acquisitions.filter((a: {type: string; pricePerBottle: number}) => a.type === 'gift' && a.pricePerBottle !== 0)).toHaveLength(0);
   expect(snapshot.acquisitions.reduce((sum: number, a: {quantity: number; pricePerBottle: number}) => sum + a.quantity * a.pricePerBottle, 0)).toBeCloseTo(362.76);
 });
+
+test('unvalued gift and purchased wines never inherit purchase price as market value', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('Onbekend', { exact: true }).first()).toBeVisible();
+  await page.goto('/kelder/wijn/seed-wine-marufa');
+  await expect(page.getByText('Marktwaarde/fl.')).toBeVisible();
+  await expect(page.getByText('Onbekend', { exact: true })).toBeVisible();
+  await expect(page.getByText('nog niet bepaald', { exact: false })).toBeVisible();
+});
