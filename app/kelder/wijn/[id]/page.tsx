@@ -1,17 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageHeader from '@/components/PageHeader';
 import Card from '@/components/Card';
 import WineLabelPhoto from '@/components/WineLabelPhoto';
-import { getWineWithCount, getBottles, getAcquisitions, addBottleToCellar, moveCellarBottle, removeCellarBottle, getRackGrid } from '@/lib/storage';
+import { getWineWithCount, getBottles, getAcquisitions, getLatestValuation, addBottleToCellar, moveCellarBottle, removeCellarBottle, getRackGrid } from '@/lib/storage';
 import {
   formatCurrency, formatCurrencyExact, formatLocation,
   DRINK_WINDOW_LABEL, DRINK_WINDOW_COLOR
 } from '@/lib/utils';
-import type { WineWithCount, Bottle, Acquisition } from '@/lib/types';
+import type { WineWithCount, Bottle, Acquisition, MarketValuation } from '@/lib/types';
+import { safePriceSourceUrl } from '@/lib/reference-prices';
 import { useGuestView } from '@/components/GuestView';
 import { getDrinkWindow, getPersonalDrinkMoment } from '@/lib/utils';
 import { extractTastings } from '@/lib/taste-profile';
@@ -26,6 +27,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
   const [wine, setWine] = useState<WineWithCount | null>(null);
   const [bottles, setBottles] = useState<Bottle[]>([]);
   const [acquisitions, setAcquisitions] = useState<Acquisition[]>([]);
+  const [valuation, setValuation] = useState<MarketValuation | null>(null);
 
 
   const [selectedBottle, setSelectedBottle] = useState('');
@@ -36,12 +38,12 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [freePositions, setFreePositions] = useState<string[]>([]);
-  async function refresh() {
-    const [w, b, a, grid] = await Promise.all([getWineWithCount(params.id), getBottles(params.id), getAcquisitions(params.id), getRackGrid()]);
-    setWine(w); setBottles(b); setAcquisitions(a);
+  const refresh = useCallback(async () => {
+    const [w, b, a, grid, v] = await Promise.all([getWineWithCount(params.id), getBottles(params.id), getAcquisitions(params.id), getRackGrid(), getLatestValuation(params.id)]);
+    setWine(w); setBottles(b); setAcquisitions(a); setValuation(v);
     setSelectedBottle(previous => b.some(x => x.id === previous) ? previous : (b[0]?.id ?? ''));
     setFreePositions(['A','B','C','D'].flatMap(row => [1,2,3,4,5,6].filter(col => !grid[row as 'A'|'B'|'C'|'D']?.[col as 1|2|3|4|5|6]).map(col => row+col)));
-  }
+  }, [params.id]);
   function location(value: string) {
     return value === 'outside' ? { type: 'outside' as const } : { type: 'rack' as const, row: value[0] as 'A'|'B'|'C'|'D', col: Number(value.slice(1)) as 1|2|3|4|5|6 };
   }
@@ -61,7 +63,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
     finally { setBusy(false); }
   }
 
-  useEffect(() => { refresh().catch(e => setError(String(e))); }, [params.id]);
+  useEffect(() => { refresh().catch(e => setError(String(e))); }, [refresh]);
 
   if (!wine) return null;
 
@@ -157,6 +159,15 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
               <p className="text-[10px] text-cream-300/40">Totaal {totalMarketValue === null ? 'nog niet bepaald' : formatCurrency(totalMarketValue)}</p>
             </div>
           </div>
+          {valuation && <div className="mt-3 space-y-1 border-t border-gold-500/10 pt-3 text-xs text-cream-300/60">
+            {valuation.source && <p>Prijsbron: {safePriceSourceUrl(valuation.sourceUrl)
+              ? <a href={safePriceSourceUrl(valuation.sourceUrl)!} target="_blank" rel="noopener noreferrer" className="text-gold-300 underline">{valuation.source}</a>
+              : valuation.source}</p>}
+            <p>Opgezocht op {new Date(valuation.updatedAt).toLocaleDateString('nl-BE', { timeZone: 'Europe/Brussels' })}</p>
+            {valuation.referenceType === 'retail' && <p>Winkelprijs als indicatie, exclusief verzending. Geen gegarandeerde verkoopwaarde.</p>}
+            {valuation.availability === 'out_of_stock' && <p className="text-gold-300">Laatst getoonde prijs; uitverkocht bij de bron.</p>}
+            {valuation.priceNote && <p>{valuation.priceNote}</p>}
+          </div>}
         </Card>}
 
         {/* Bottle locations */}
