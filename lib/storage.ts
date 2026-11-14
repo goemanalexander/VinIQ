@@ -220,10 +220,9 @@ export async function getCellarSummary(): Promise<CellarSummary> {
   const bottlesOutside = bottles.filter(b => b.location.type === 'outside').length;
 
   const purchaseValue = wines.reduce((sum, w) => sum + w.avgPurchasePrice * w.bottleCount, 0);
-  const marketValue = wines.reduce((sum, w) => {
-    const val = w.latestMarketValue ?? w.avgPurchasePrice;
-    return sum + val * w.bottleCount;
-  }, 0);
+  const valuedWines = wines.filter(w => w.latestMarketValue !== undefined);
+  const valuedBottles = valuedWines.reduce((sum, w) => sum + w.bottleCount, 0);
+  const marketValue = valuedWines.reduce((sum, w) => sum + w.latestMarketValue! * w.bottleCount, 0);
 
   return {
     totalBottles: bottles.length,
@@ -233,7 +232,8 @@ export async function getCellarSummary(): Promise<CellarSummary> {
     rackCapacity: 24,
     purchaseValue,
     marketValue,
-    valueDifference: marketValue - purchaseValue,
+    valuedBottles,
+    valueDifference: valuedBottles === bottles.length ? marketValue - purchaseValue : 0,
   };
 }
 
