@@ -6,15 +6,14 @@ test('dashboard loads on mobile', async ({ page }) => {
   await expect(page.getByText('Fles toevoegen').first()).toBeVisible();
 });
 
-test('rack displays 24 slots', async ({ page }) => {
+test('rack displays all 24 occupied slots', async ({ page }) => {
   await page.goto('/kelder/rek');
-  await expect(page.getByText('Leeg', { exact: true })).toBeVisible();
-  await expect(page.getByText('23/24 bezet')).toBeVisible();
+  await expect(page.getByText('24/24 bezet')).toBeVisible();
 });
 
-test('seeded cellar shows 33 bottles and 14 wines', async ({ page }) => {
+test('official cellar shows 34 bottles and 14 wines', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('33', { exact: true })).toBeVisible();
+  await expect(page.getByText('34', { exact: true })).toBeVisible();
   await expect(page.getByText('14', { exact: true })).toBeVisible();
 });
 
@@ -39,21 +38,21 @@ test('new purchased wine is added with decimal price and survives reload', async
   await expect(page.getByText('Reserve Test').first()).toBeVisible();
   await expect(page.getByText('×2').first()).toBeVisible();
   await page.goto('/');
-  await expect(page.getByText('35', { exact: true })).toBeVisible();
+  await expect(page.getByText('36', { exact: true })).toBeVisible();
   await expect(page.getByText('15', { exact: true })).toBeVisible();
 });
 
-test('gift adds two bottles, occupies only one rack slot and records history', async ({ page }) => {
+test('gift adds two bottles in adjacent box when rack is full and records history', async ({ page }) => {
   await page.goto('/kelder/toevoegen');
   await page.getByLabel('Producent *').fill('Geschenk Domein');
   await page.getByLabel('Naam van de wijn *').fill('Cadeau Cuvée');
   await page.getByLabel('Aantal flessen *').fill('2');
   await page.getByLabel('Cadeau gekregen').check();
   await expect(page.getByLabel('Aankoopprijs per fles (€) *')).toHaveCount(0);
-  await page.getByLabel('Positie eerste fles').selectOption('C5');
+  await expect(page.getByLabel('Positie eerste fles').locator('option')).toHaveCount(1);
   await page.getByRole('button', { name: 'Wijn en flessen toevoegen' }).click();
   await expect(page.getByText('×2').first()).toBeVisible();
-  await expect(page.locator('span').getByText('Rek C5', { exact: true })).toBeVisible();
+  await expect(page.getByText('Buiten rek', { exact: false }).first()).toBeVisible();
   await expect(page.getByText('Buiten rek', { exact: false }).first()).toBeVisible();
   await expect(page.getByText('Geschenk', { exact: true }).first()).toBeVisible();
   await page.goto('/kelder/rek');
@@ -281,4 +280,23 @@ test('maturity advice uses preferred period without changing cellar stock', asyn
   await expect(page.getByText('Al drinkbaar, maar voor jouw voorkeur', { exact: false }).first()).toBeVisible();
   const countAfter = await page.evaluate(() => JSON.parse(localStorage.getItem('viniq-cellar-v1')!).bottles.length);
   expect(countAfter).toBe(countBefore);
+});
+
+test('official inventory has 34 individually located bottles and no invented purchase values', async ({ page }) => {
+  await page.goto('/');
+  const snapshot = await page.evaluate(() => JSON.parse(localStorage.getItem('viniq-cellar-v1')!));
+  expect(snapshot.wines).toHaveLength(14);
+  expect(snapshot.bottles).toHaveLength(34);
+  expect(snapshot.bottles.filter((b: {location: {type: string}}) => b.location.type === 'rack')).toHaveLength(24);
+  expect(snapshot.bottles.filter((b: {location: {type: string; label?: string}}) => b.location.type === 'outside' && b.location.label === 'doos naast rek')).toHaveLength(10);
+  const slots = snapshot.bottles.filter((b: {location: {type: string}}) => b.location.type === 'rack').map((b: {location: {row: string; col: number}}) => b.location.row + b.location.col);
+  expect(new Set(slots).size).toBe(24);
+  const byId = (id: string) => snapshot.bottles.filter((b: {wineId: string}) => b.wineId === 'seed-wine-' + id);
+  expect(byId('cdp').map((b: {location: {row: string; col: number}}) => b.location.row + b.location.col)).toEqual(['C4','C5','C6']);
+  expect(byId('bennati').map((b: {location: {row: string; col: number}}) => b.location.row + b.location.col)).toEqual(['D1','D2','D3','D4','D5','D6']);
+  expect(byId('marufa')[0].location).toEqual({ type: 'rack', row: 'A', col: 6 });
+  expect(snapshot.wines.some((w: {id: string}) => w.id === 'seed-wine-masso')).toBe(false);
+  expect(snapshot.acquisitions.filter((a: {type: string}) => a.type === 'gift')).toHaveLength(5);
+  expect(snapshot.acquisitions.filter((a: {type: string; pricePerBottle: number}) => a.type === 'gift' && a.pricePerBottle !== 0)).toHaveLength(0);
+  expect(snapshot.acquisitions.reduce((sum: number, a: {quantity: number; pricePerBottle: number}) => sum + a.quantity * a.pricePerBottle, 0)).toBeCloseTo(362.76);
 });
