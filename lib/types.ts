@@ -96,6 +96,10 @@ export interface MarketValuation {
   wineId: string;
   valuePerBottle: number;
   source?: string;                  // e.g. "Wine-Searcher", "schatting"
+  sourceUrl?: string;
+  referenceType?: 'retail';         // Observed shop price, not a resale appraisal
+  availability?: 'listed' | 'out_of_stock';
+  priceNote?: string;
   updatedAt: string;                // ISO timestamp
 }
 
