@@ -140,8 +140,9 @@ export interface CellarSummary {
   bottlesOutsideRack: number;
   rackCapacity: number;             // 24 (4 rows × 6 cols)
   purchaseValue: number;            // SUM(avgPurchasePrice × bottleCount)
-  marketValue: number;              // SUM(latestMarketValue × bottleCount)
-  valueDifference: number;          // marketValue - purchaseValue
+  marketValue: number;              // Sum of explicitly valued bottles only
+  valuedBottles: number;            // Bottles with explicit market valuation
+  valueDifference: number;          // Meaningful only when all bottles are valued
 }
 
 // ─── RACK GRID ──────────────────────────────────────────────────────────────
