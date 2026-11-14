@@ -76,7 +76,7 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
     return duplicates ? `${name} · fles ${count}` : name;
   });
   const totalPurchaseValue = wine.avgPurchasePrice * wine.bottleCount;
-  const totalMarketValue = (wine.latestMarketValue ?? wine.avgPurchasePrice) * wine.bottleCount;
+  const totalMarketValue = wine.latestMarketValue === undefined ? null : wine.latestMarketValue * wine.bottleCount;
 
   return (
     <>
@@ -152,9 +152,9 @@ export default function WijnDetailPage({ params }: { params: { id: string } }) {
             <div>
               <p className="text-[10px] text-cream-300/50 mb-0.5">Marktwaarde/fl.</p>
               <p className="font-display text-2xl text-gold-300">
-                {formatCurrencyExact(wine.latestMarketValue ?? wine.avgPurchasePrice)}
+                {wine.latestMarketValue === undefined ? 'Onbekend' : formatCurrencyExact(wine.latestMarketValue)}
               </p>
-              <p className="text-[10px] text-cream-300/40">Totaal {formatCurrency(totalMarketValue)}</p>
+              <p className="text-[10px] text-cream-300/40">Totaal {totalMarketValue === null ? 'nog niet bepaald' : formatCurrency(totalMarketValue)}</p>
             </div>
           </div>
         </Card>}
