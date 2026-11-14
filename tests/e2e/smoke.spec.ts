@@ -146,7 +146,7 @@ test('bottle picker shows readable locations without internal IDs', async ({ pag
   const options = await picker.locator('option').allTextContents();
   expect(options.length).toBeGreaterThan(1);
   expect(options.some(s => s.startsWith('Rek '))).toBeTruthy();
-  expect(options.some(s => /(Buiten rek|Doos naast rek) · fles [12]/.test(s))).toBeTruthy();
+  expect(options.some(s => /Buiten rek(?: — doos naast rek)? · fles [12]/.test(s))).toBeTruthy();
   expect(options.every(s => !/ · [a-z0-9-]{5}$/.test(s))).toBeTruthy();
 });
 
